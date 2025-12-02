@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react"
-import { Download, RefreshCw, FileText, Calendar, TrendingUp, AlertTriangle } from "lucide-react"
+import { Download, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
@@ -13,7 +13,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { reportService } from "@/services/report.service"
 import { format, subDays } from "date-fns"
 

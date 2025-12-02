@@ -1,7 +1,6 @@
 import { Menu, Bell, User } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAuthStore } from "@/store/auth.store"
-import { cn } from "@/lib/utils"
 
 interface HeaderProps {
   onMenuClick: () => void

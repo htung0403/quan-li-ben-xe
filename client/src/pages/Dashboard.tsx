@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { Bus, CheckCircle, DollarSign, AlertTriangle } from "lucide-react"
 import { DashboardCard } from "@/components/layout/DashboardCard"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"

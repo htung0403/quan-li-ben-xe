@@ -88,7 +88,7 @@ export const mockLogin = async (
 }
 
 // Mock get current user
-export const mockGetCurrentUser = async (token: string): Promise<User> => {
+export const mockGetCurrentUser = async (_token: string): Promise<User> => {
   // Simulate API delay
   await new Promise((resolve) => setTimeout(resolve, 300))
 

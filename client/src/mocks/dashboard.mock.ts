@@ -1,4 +1,3 @@
-import { format, subDays } from "date-fns"
 
 export const mockDashboardStats = {
   vehiclesInStation: 24,

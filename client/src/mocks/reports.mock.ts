@@ -75,7 +75,7 @@ export const mockInvoiceReports: InvoiceReport[] = [
   },
 ]
 
-export const mockRevenueReports: RevenueReport[] = generateDates(7).map((date, index) => {
+export const mockRevenueReports: RevenueReport[] = generateDates(7).map((date) => {
   const baseRevenue = 5000000 + Math.random() * 3000000
   const vehicleCount = 20 + Math.floor(Math.random() * 15)
   const transactionCount = vehicleCount + Math.floor(Math.random() * 10)

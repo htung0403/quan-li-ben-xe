@@ -23,22 +23,15 @@ import {
 import { Label } from "@/components/ui/label"
 import { Select } from "@/components/ui/select"
 import { useDispatchStore } from "@/store/dispatch.store"
-import { dispatchService } from "@/services/dispatch.service"
 import type { DispatchRecord, DispatchStatus } from "@/types"
 import { format } from "date-fns"
 import { mockDispatchRecords } from "@/mocks/dispatch.mock"
 import { mockVehicles } from "@/mocks/vehicles.mock"
-import { mockDrivers } from "@/mocks/drivers.mock"
 
 // Transform vehicles and drivers for select options
 const vehicleOptions = mockVehicles.map((v) => ({
   id: v.id,
   plateNumber: v.plateNumber,
-}))
-
-const driverOptions = mockDrivers.map((d) => ({
-  id: d.id,
-  name: d.fullName,
 }))
 
 export default function Dispatch() {
