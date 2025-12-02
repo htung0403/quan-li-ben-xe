@@ -574,51 +574,116 @@ function QRScanner({
 }) {
   const [scanning, setScanning] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [isScanning, setIsScanning] = useState(false)
   const qrCodeRef = useRef<Html5Qrcode | null>(null)
   const scannerId = "qr-reader"
+  const containerRef = useRef<HTMLDivElement>(null)
+
+  // Tính toán kích thước QR box responsive
+  const getQRBoxSize = () => {
+    if (typeof window === "undefined") return { width: 250, height: 250 }
+    
+    const minSize = 200
+    const maxSize = 300
+    const viewportWidth = window.innerWidth
+    const viewportHeight = window.innerHeight
+    
+    // Tính toán dựa trên viewport, nhưng giới hạn trong khoảng hợp lý
+    const size = Math.min(
+      Math.max(viewportWidth * 0.6, minSize),
+      Math.max(viewportHeight * 0.4, minSize),
+      maxSize
+    )
+    
+    return { width: size, height: size }
+  }
 
   const stopScanning = async () => {
     if (qrCodeRef.current) {
       try {
         await qrCodeRef.current.stop()
-        qrCodeRef.current.clear()
+        await qrCodeRef.current.clear()
       } catch (err) {
-        console.error("Error stopping QR scanner:", err)
+        // Ignore errors when stopping (camera might already be stopped)
+        console.debug("Error stopping QR scanner:", err)
+      } finally {
+        qrCodeRef.current = null
+        setIsScanning(false)
       }
-      qrCodeRef.current = null
     }
   }
 
   useEffect(() => {
-    if (scanning) {
+    if (scanning && !isScanning) {
       const startScanning = async () => {
         try {
+          // Kiểm tra quyền truy cập camera trước
+          const stream = await navigator.mediaDevices.getUserMedia({ 
+            video: { facingMode: "environment" } 
+          })
+          // Dừng stream tạm thời để html5-qrcode tự quản lý
+          stream.getTracks().forEach(track => track.stop())
+
           const html5QrCode = new Html5Qrcode(scannerId)
           qrCodeRef.current = html5QrCode
 
+          const qrBoxSize = getQRBoxSize()
+          
+          // Cấu hình camera tối ưu
+          const config = {
+            fps: 15, // Tăng FPS để quét nhanh hơn
+            qrbox: qrBoxSize,
+            aspectRatio: 1.0, // Tỷ lệ 1:1 cho QR code
+            disableFlip: false, // Cho phép lật ảnh nếu cần
+            videoConstraints: {
+              facingMode: "environment", // Camera sau
+              width: { ideal: 1280 }, // Resolution tối ưu
+              height: { ideal: 720 },
+            },
+          }
+
           await html5QrCode.start(
             { facingMode: "environment" },
-            {
-              fps: 10,
-              qrbox: { width: 250, height: 250 },
-            },
+            config,
             (decodedText) => {
+              // Chỉ xử lý một lần khi quét thành công
+              if (!isScanning) return
               onScanSuccess(decodedText)
               stopScanning()
             },
-            () => {
-              // Ignore scanning errors
+            (errorMessage) => {
+              // Chỉ log lỗi quan trọng, bỏ qua lỗi quét thông thường
+              if (errorMessage.includes("No QR code found")) {
+                // Đây là lỗi bình thường khi đang tìm QR code
+                return
+              }
+              console.debug("QR scan error:", errorMessage)
             }
           )
+          
+          setIsScanning(true)
           setError(null)
         } catch (err: any) {
           console.error("Error starting QR scanner:", err)
-          setError("Không thể khởi động camera. Vui lòng kiểm tra quyền truy cập camera.")
+          
+          let errorMessage = "Không thể khởi động camera. "
+          if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
+            errorMessage += "Vui lòng cấp quyền truy cập camera."
+          } else if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") {
+            errorMessage += "Không tìm thấy camera."
+          } else if (err.name === "NotReadableError" || err.name === "TrackStartError") {
+            errorMessage += "Camera đang được sử dụng bởi ứng dụng khác."
+          } else {
+            errorMessage += "Vui lòng thử lại."
+          }
+          
+          setError(errorMessage)
           setScanning(false)
+          setIsScanning(false)
         }
       }
       startScanning()
-    } else {
+    } else if (!scanning && isScanning) {
       stopScanning()
     }
 
@@ -639,9 +704,20 @@ function QRScanner({
           </div>
         </div>
       ) : (
-        <div className="space-y-4">
-          <div id={scannerId} className="w-full rounded-lg overflow-hidden"></div>
-          <Button variant="outline" onClick={() => setScanning(false)} className="w-full">
+        <div className="space-y-4" ref={containerRef}>
+          <div 
+            id={scannerId} 
+            className="w-full rounded-lg overflow-hidden bg-black"
+            style={{ minHeight: "300px", position: "relative" }}
+          />
+          <Button 
+            variant="outline" 
+            onClick={() => {
+              setScanning(false)
+              stopScanning()
+            }} 
+            className="w-full"
+          >
             Dừng quét
           </Button>
         </div>
@@ -655,6 +731,7 @@ function QRScanner({
         <p>• Đảm bảo camera có quyền truy cập</p>
         <p>• Đặt QR code trong khung quét</p>
         <p>• Đảm bảo đủ ánh sáng</p>
+        <p>• Giữ điện thoại ổn định để quét tốt hơn</p>
       </div>
     </div>
   )
