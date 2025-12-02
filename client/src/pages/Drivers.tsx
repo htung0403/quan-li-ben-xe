@@ -559,7 +559,6 @@ function DriverForm({
                 setQrScannerOpen(false)
               }
             }}
-            onClose={() => setQrScannerOpen(false)}
           />
         </div>
       </DialogContent>
@@ -570,10 +569,8 @@ function DriverForm({
 
 function QRScanner({
   onScanSuccess,
-  onClose,
 }: {
   onScanSuccess: (text: string) => void
-  onClose: () => void
 }) {
   const [scanning, setScanning] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -609,7 +606,7 @@ function QRScanner({
               onScanSuccess(decodedText)
               stopScanning()
             },
-            (errorMessage) => {
+            () => {
               // Ignore scanning errors
             }
           )
