@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react"
-import { Plus, Search, Edit, Eye, Trash2, Image as ImageIcon } from "lucide-react"
+import { useState, useEffect, useRef } from "react"
+import { Plus, Search, Edit, Eye, Trash2, Image as ImageIcon, QrCode } from "lucide-react"
+import { Html5Qrcode } from "html5-qrcode"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
@@ -186,17 +187,25 @@ export default function Drivers() {
                   </TableCell>
                   <TableCell>
                     {driver.imageUrl ? (
-                      <Button
-                        size="sm"
-                        variant="outline"
+                      <div
+                        className="cursor-pointer hover:opacity-80 transition-opacity"
                         onClick={() => handleViewImage(driver.imageUrl!)}
                         aria-label="Xem ảnh"
                       >
-                        <ImageIcon className="h-4 w-4 mr-2" />
-                        Xem ảnh
-                      </Button>
+                        <img
+                          src={driver.imageUrl}
+                          alt={`Ảnh ${driver.fullName}`}
+                          className="w-16 h-16 object-cover rounded-lg border border-gray-200"
+                          onError={(e) => {
+                            const target = e.target as HTMLImageElement
+                            target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='64' height='64'%3E%3Crect fill='%23f3f4f6' width='64' height='64'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%239ca3af' font-family='Arial' font-size='10'%3EN/A%3C/text%3E%3C/svg%3E"
+                          }}
+                        />
+                      </div>
                     ) : (
-                      <span className="text-sm text-gray-400">Chưa có ảnh</span>
+                      <div className="w-16 h-16 flex items-center justify-center bg-gray-100 rounded-lg border border-gray-200">
+                        <ImageIcon className="h-6 w-6 text-gray-400" />
+                      </div>
                     )}
                   </TableCell>
                   <TableCell>
@@ -359,9 +368,11 @@ function DriverForm({
   mode: "create" | "edit"
   onClose: () => void
 }) {
+  const [qrScannerOpen, setQrScannerOpen] = useState(false)
   const {
     register,
     handleSubmit,
+    setValue,
     formState: { errors },
   } = useForm<DriverFormData>({
     resolver: zodResolver(driverSchema),
@@ -378,6 +389,45 @@ function DriverForm({
       : undefined,
   })
 
+  const parseQRData = (qrText: string) => {
+    try {
+      const parts = qrText.split(";")
+      if (parts.length < 7) {
+        throw new Error("Định dạng QR code không hợp lệ")
+      }
+
+      const licenseNumber = parts[0].trim()
+      const fullName = parts[1].trim()
+      const licenseExpiryText = parts[5].trim()
+
+      // Parse ngày hết hạn (có thể là "Không thời hạn" hoặc ddmmyyyy)
+      let licenseExpiry = ""
+      if (licenseExpiryText !== "Không thời hạn" && licenseExpiryText.length === 8) {
+        // Convert ddmmyyyy to yyyy-mm-dd
+        const day = licenseExpiryText.substring(0, 2)
+        const month = licenseExpiryText.substring(2, 4)
+        const year = licenseExpiryText.substring(4, 8)
+        licenseExpiry = `${year}-${month}-${day}`
+      } else if (licenseExpiryText === "Không thời hạn") {
+        // Set a far future date for "no expiry"
+        licenseExpiry = "2099-12-31"
+      }
+
+      // Điền vào form
+      setValue("licenseNumber", licenseNumber)
+      setValue("fullName", fullName)
+      if (licenseExpiry) {
+        setValue("licenseExpiry", licenseExpiry)
+      }
+
+      return true
+    } catch (error) {
+      console.error("Error parsing QR data:", error)
+      alert("Không thể đọc dữ liệu từ QR code. Vui lòng thử lại.")
+      return false
+    }
+  }
+
   const onSubmit = async (data: DriverFormData) => {
     try {
       if (mode === "create") {
@@ -392,8 +442,22 @@ function DriverForm({
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-      <div className="grid grid-cols-2 gap-6">
+    <>
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        {mode === "create" && (
+          <div className="flex justify-end mb-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setQrScannerOpen(true)}
+              className="flex items-center gap-2"
+            >
+              <QrCode className="h-4 w-4" />
+              Quét QR bằng lái
+            </Button>
+          </div>
+        )}
+        <div className="grid grid-cols-2 gap-6">
         <div className="space-y-2">
           <Label htmlFor="fullName" className="text-base font-semibold">
             Họ tên *
@@ -480,6 +544,122 @@ function DriverForm({
         <Button type="submit" className="min-w-[100px]">Lưu</Button>
       </div>
     </form>
+
+    {/* QR Scanner Dialog */}
+    <Dialog open={qrScannerOpen} onOpenChange={setQrScannerOpen}>
+      <DialogContent className="max-w-2xl w-full p-6">
+        <DialogClose onClose={() => setQrScannerOpen(false)} />
+        <DialogHeader>
+          <DialogTitle className="text-2xl">Quét QR code bằng lái xe</DialogTitle>
+        </DialogHeader>
+        <div className="mt-4">
+          <QRScanner
+            onScanSuccess={(text) => {
+              if (parseQRData(text)) {
+                setQrScannerOpen(false)
+              }
+            }}
+            onClose={() => setQrScannerOpen(false)}
+          />
+        </div>
+      </DialogContent>
+    </Dialog>
+    </>
+  )
+}
+
+function QRScanner({
+  onScanSuccess,
+  onClose,
+}: {
+  onScanSuccess: (text: string) => void
+  onClose: () => void
+}) {
+  const [scanning, setScanning] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const qrCodeRef = useRef<Html5Qrcode | null>(null)
+  const scannerId = "qr-reader"
+
+  const stopScanning = async () => {
+    if (qrCodeRef.current) {
+      try {
+        await qrCodeRef.current.stop()
+        qrCodeRef.current.clear()
+      } catch (err) {
+        console.error("Error stopping QR scanner:", err)
+      }
+      qrCodeRef.current = null
+    }
+  }
+
+  useEffect(() => {
+    if (scanning) {
+      const startScanning = async () => {
+        try {
+          const html5QrCode = new Html5Qrcode(scannerId)
+          qrCodeRef.current = html5QrCode
+
+          await html5QrCode.start(
+            { facingMode: "environment" },
+            {
+              fps: 10,
+              qrbox: { width: 250, height: 250 },
+            },
+            (decodedText) => {
+              onScanSuccess(decodedText)
+              stopScanning()
+            },
+            (errorMessage) => {
+              // Ignore scanning errors
+            }
+          )
+          setError(null)
+        } catch (err: any) {
+          console.error("Error starting QR scanner:", err)
+          setError("Không thể khởi động camera. Vui lòng kiểm tra quyền truy cập camera.")
+          setScanning(false)
+        }
+      }
+      startScanning()
+    } else {
+      stopScanning()
+    }
+
+    return () => {
+      stopScanning()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [scanning])
+
+  return (
+    <div className="space-y-4">
+      {!scanning ? (
+        <div className="space-y-4">
+          <div className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-gray-300 rounded-lg">
+            <QrCode className="h-16 w-16 text-gray-400 mb-4" />
+            <p className="text-gray-600 mb-4">Nhấn nút bên dưới để bắt đầu quét QR code</p>
+            <Button onClick={() => setScanning(true)}>Bắt đầu quét</Button>
+          </div>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          <div id={scannerId} className="w-full rounded-lg overflow-hidden"></div>
+          <Button variant="outline" onClick={() => setScanning(false)} className="w-full">
+            Dừng quét
+          </Button>
+        </div>
+      )}
+      {error && (
+        <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+          <p className="text-sm text-red-600">{error}</p>
+        </div>
+      )}
+      <div className="text-sm text-gray-500">
+        <p>• Đảm bảo camera có quyền truy cập</p>
+        <p>• Đặt QR code trong khung quét</p>
+        <p>• Đảm bảo đủ ánh sáng</p>
+      </div>
+    </div>
   )
 }
 
