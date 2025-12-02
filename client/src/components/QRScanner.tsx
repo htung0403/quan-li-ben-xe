@@ -7,26 +7,6 @@ interface QRScannerProps {
   onScanSuccess: (text: string) => void
 }
 
-// Utility function debounce
-function debounce<T extends (...args: any[]) => any>(
-  func: T,
-  wait: number
-): (...args: Parameters<T>) => void {
-  let timeout: ReturnType<typeof setTimeout> | null = null
-  
-  return function executedFunction(...args: Parameters<T>) {
-    const later = () => {
-      timeout = null
-      func(...args)
-    }
-    
-    if (timeout) {
-      clearTimeout(timeout)
-    }
-    timeout = setTimeout(later, wait)
-  }
-}
-
 export function QRScanner({ onScanSuccess }: QRScannerProps) {
   const [scanning, setScanning] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -34,7 +14,6 @@ export function QRScanner({ onScanSuccess }: QRScannerProps) {
   const [hasProcessed, setHasProcessed] = useState(false)
   
   const qrCodeRef = useRef<Html5Qrcode | null>(null)
-  const containerRef = useRef<HTMLDivElement>(null)
   const lastScanTimeRef = useRef<number>(0)
   const scannerId = "qr-reader"
 
@@ -43,13 +22,12 @@ export function QRScanner({ onScanSuccess }: QRScannerProps) {
     if (typeof window === "undefined") return { width: 250, height: 250 }
     
     const minSize = 200
-    const maxSize = 300
+    const maxSize = 350
     const viewportWidth = window.innerWidth
-    const viewportHeight = window.innerHeight
     
+    // Tính toán dựa trên chiều rộng viewport
     const size = Math.min(
-      Math.max(viewportWidth * 0.6, minSize),
-      Math.max(viewportHeight * 0.4, minSize),
+      Math.max(viewportWidth * 0.7, minSize),
       maxSize
     )
     
@@ -60,8 +38,9 @@ export function QRScanner({ onScanSuccess }: QRScannerProps) {
   const stopScanning = useCallback(async () => {
     if (qrCodeRef.current) {
       try {
-        const isCurrentlyScanning = qrCodeRef.current.getState() === 2 // SCANNING state
-        if (isCurrentlyScanning) {
+        const state = qrCodeRef.current.getState()
+        // State 2 = SCANNING, State 3 = PAUSED
+        if (state === 2 || state === 3) {
           await qrCodeRef.current.stop()
         }
         await qrCodeRef.current.clear()
@@ -125,51 +104,57 @@ export function QRScanner({ onScanSuccess }: QRScannerProps) {
             throw new Error("Browser không hỗ trợ camera")
           }
 
-          // Kiểm tra quyền camera trước
-          const stream = await navigator.mediaDevices.getUserMedia({ 
-            video: { facingMode: "environment" } 
-          })
-          stream.getTracks().forEach(track => track.stop())
-
+          // Khởi tạo Html5Qrcode với config đơn giản
           const html5QrCode = new Html5Qrcode(scannerId, {
-            verbose: false, // Tắt log verbose
-            formatsToSupport: [0] // Chỉ hỗ trợ QR_CODE (tối ưu performance)
+            verbose: false,
           })
           qrCodeRef.current = html5QrCode
 
           const qrBoxSize = getQRBoxSize()
           
-          // Cấu hình tối ưu
-          const config = {
-            fps: 10, // Giảm FPS để tiết kiệm CPU (10 fps là đủ)
+          // Cấu hình đơn giản và ổn định
+          const config: any = {
+            fps: 10,
             qrbox: qrBoxSize,
             aspectRatio: 1.0,
             disableFlip: false,
-            videoConstraints: {
-              facingMode: "environment",
-              width: { ideal: 1280, max: 1920 },
-              height: { ideal: 720, max: 1080 },
-            },
-            // Thêm advanced config
-            experimentalFeatures: {
-              useBarCodeDetectorIfSupported: true // Dùng native API nếu có
-            }
           }
 
-          await html5QrCode.start(
-            { facingMode: "environment" },
-            config,
-            handleScanSuccess,
-            (errorMessage) => {
-              // Bỏ qua các lỗi không quan trọng
-              if (
-                errorMessage.includes("No QR code found") ||
-                errorMessage.includes("QR code parse error")
-              ) {
-                return
+          // Thử camera sau trước
+          try {
+            await html5QrCode.start(
+              { facingMode: "environment" },
+              config,
+              handleScanSuccess,
+              (errorMessage) => {
+                // Bỏ qua các lỗi không quan trọng
+                if (
+                  errorMessage.includes("No QR code found") ||
+                  errorMessage.includes("QR code parse error") ||
+                  errorMessage.includes("NotFoundException")
+                ) {
+                  return
+                }
               }
-            }
-          )
+            )
+          } catch (cameraError: any) {
+            // Nếu camera sau không có, thử camera trước
+            console.log("Environment camera not available, trying user camera...")
+            await html5QrCode.start(
+              { facingMode: "user" },
+              config,
+              handleScanSuccess,
+              (errorMessage) => {
+                if (
+                  errorMessage.includes("No QR code found") ||
+                  errorMessage.includes("QR code parse error") ||
+                  errorMessage.includes("NotFoundException")
+                ) {
+                  return
+                }
+              }
+            )
+          }
           
           setIsScanning(true)
           setError(null)
@@ -203,27 +188,6 @@ export function QRScanner({ onScanSuccess }: QRScannerProps) {
     }
   }, [stopScanning])
 
-  // Handle window resize
-  useEffect(() => {
-    if (!scanning) return
-
-    const handleResize = () => {
-      // Tạm dừng và khởi động lại để áp dụng kích thước mới
-      if (isScanning) {
-        stopScanning().then(() => {
-          setScanning(true)
-        })
-      }
-    }
-
-    const debouncedResize = debounce(handleResize, 500)
-    window.addEventListener('resize', debouncedResize)
-    
-    return () => {
-      window.removeEventListener('resize', debouncedResize)
-    }
-  }, [scanning, isScanning, stopScanning])
-
   return (
     <div className="space-y-4">
       {!scanning ? (
@@ -239,15 +203,14 @@ export function QRScanner({ onScanSuccess }: QRScannerProps) {
           </div>
         </div>
       ) : (
-        <div className="space-y-4" ref={containerRef}>
+        <div className="space-y-4">
           <div 
             id={scannerId} 
-            className="w-full rounded-lg overflow-hidden bg-black shadow-lg"
+            className="w-full rounded-lg overflow-hidden bg-black"
             style={{ 
-              minHeight: "300px", 
+              minHeight: "400px",
               position: "relative",
-              aspectRatio: "1 / 1",
-              maxWidth: "100%"
+              maxWidth: "100%",
             }}
           />
           <Button 
@@ -279,4 +242,3 @@ export function QRScanner({ onScanSuccess }: QRScannerProps) {
     </div>
   )
 }
-
