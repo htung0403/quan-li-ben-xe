@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { Search, FileCheck, CreditCard, LogOut, Plus } from "lucide-react"
+import { Search, FileCheck, CreditCard, LogOut, Plus, Building2, CheckCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
@@ -66,6 +66,14 @@ export default function Dispatch() {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  // Calculate statistics
+  const stats = {
+    "in-station": mockDispatchRecords.filter((r) => r.status === "in-station").length,
+    "permit-issued": mockDispatchRecords.filter((r) => r.status === "permit-issued").length,
+    "paid": mockDispatchRecords.filter((r) => r.status === "paid").length,
+    "departed": mockDispatchRecords.filter((r) => r.status === "departed").length,
   }
 
   const filteredRecords = records.filter((record) => {
@@ -144,6 +152,101 @@ export default function Dispatch() {
           <Plus className="mr-2 h-4 w-4" />
           Cho xe vào bến
         </Button>
+      </div>
+
+      {/* Statistics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <Card 
+          className={`cursor-pointer hover:shadow-md transition-all ${
+            activeTab === "in-station" ? "bg-blue-50" : "bg-white"
+          }`}
+          onClick={() => setActiveTab("in-station")}
+        >
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Trong bến</p>
+                <p className="text-2xl font-bold text-gray-900 mt-2">{stats["in-station"]}</p>
+              </div>
+              <div className={`h-12 w-12 rounded-full flex items-center justify-center ${
+                activeTab === "in-station" ? "bg-blue-200" : "bg-blue-100"
+              }`}>
+                <Building2 className={`h-6 w-6 ${
+                  activeTab === "in-station" ? "text-blue-700" : "text-blue-600"
+                }`} />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card 
+          className={`cursor-pointer hover:shadow-md transition-all ${
+            activeTab === "permit-issued" ? "bg-green-50" : "bg-white"
+          }`}
+          onClick={() => setActiveTab("permit-issued")}
+        >
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Đã cấp nốt</p>
+                <p className="text-2xl font-bold text-gray-900 mt-2">{stats["permit-issued"]}</p>
+              </div>
+              <div className={`h-12 w-12 rounded-full flex items-center justify-center ${
+                activeTab === "permit-issued" ? "bg-green-200" : "bg-green-100"
+              }`}>
+                <FileCheck className={`h-6 w-6 ${
+                  activeTab === "permit-issued" ? "text-green-700" : "text-green-600"
+                }`} />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card 
+          className={`cursor-pointer hover:shadow-md transition-all ${
+            activeTab === "paid" ? "bg-yellow-50" : "bg-white"
+          }`}
+          onClick={() => setActiveTab("paid")}
+        >
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Đã thanh toán</p>
+                <p className="text-2xl font-bold text-gray-900 mt-2">{stats["paid"]}</p>
+              </div>
+              <div className={`h-12 w-12 rounded-full flex items-center justify-center ${
+                activeTab === "paid" ? "bg-yellow-200" : "bg-yellow-100"
+              }`}>
+                <CreditCard className={`h-6 w-6 ${
+                  activeTab === "paid" ? "text-yellow-700" : "text-yellow-600"
+                }`} />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card 
+          className={`cursor-pointer hover:shadow-md transition-all ${
+            activeTab === "departed" ? "bg-purple-50" : "bg-white"
+          }`}
+          onClick={() => setActiveTab("departed")}
+        >
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Đã xuất bến</p>
+                <p className="text-2xl font-bold text-gray-900 mt-2">{stats["departed"]}</p>
+              </div>
+              <div className={`h-12 w-12 rounded-full flex items-center justify-center ${
+                activeTab === "departed" ? "bg-purple-200" : "bg-purple-100"
+              }`}>
+                <CheckCircle className={`h-6 w-6 ${
+                  activeTab === "departed" ? "text-purple-700" : "text-purple-600"
+                }`} />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Search */}

@@ -39,6 +39,7 @@ export interface Driver {
   licenseExpiry: string
   contractExpiry?: string
   status: DriverStatus
+  imageUrl?: string
   createdAt?: string
   updatedAt?: string
 }

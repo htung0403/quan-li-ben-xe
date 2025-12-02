@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { Plus, Search, Edit, Eye, Trash2 } from "lucide-react"
+import { Plus, Search, Edit, Eye, Trash2, Image as ImageIcon } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
@@ -46,6 +46,8 @@ export default function Drivers() {
   const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [viewMode, setViewMode] = useState<"create" | "edit" | "view">("create")
+  const [imageDialogOpen, setImageDialogOpen] = useState(false)
+  const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null)
 
   useEffect(() => {
     loadDrivers()
@@ -110,6 +112,11 @@ export default function Drivers() {
     }
   }
 
+  const handleViewImage = (imageUrl: string) => {
+    setSelectedImageUrl(imageUrl)
+    setImageDialogOpen(true)
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -148,19 +155,20 @@ export default function Drivers() {
               <TableHead>Số bằng lái</TableHead>
               <TableHead>Ngày hết hạn bằng lái</TableHead>
               <TableHead>Trạng thái</TableHead>
+              <TableHead>Ảnh tài xế</TableHead>
               <TableHead>Thao tác</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8">
+                <TableCell colSpan={7} className="text-center py-8">
                   Đang tải...
                 </TableCell>
               </TableRow>
             ) : filteredDrivers.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                <TableCell colSpan={7} className="text-center py-8 text-gray-500">
                   Không có dữ liệu
                 </TableCell>
               </TableRow>
@@ -175,6 +183,21 @@ export default function Drivers() {
                   </TableCell>
                   <TableCell>
                     <StatusBadge status={driver.status} />
+                  </TableCell>
+                  <TableCell>
+                    {driver.imageUrl ? (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleViewImage(driver.imageUrl!)}
+                        aria-label="Xem ảnh"
+                      >
+                        <ImageIcon className="h-4 w-4 mr-2" />
+                        Xem ảnh
+                      </Button>
+                    ) : (
+                      <span className="text-sm text-gray-400">Chưa có ảnh</span>
+                    )}
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
@@ -232,6 +255,29 @@ export default function Drivers() {
                 onClose={() => {
                   setDialogOpen(false)
                   loadDrivers()
+                }}
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Image Dialog */}
+      <Dialog open={imageDialogOpen} onOpenChange={setImageDialogOpen}>
+        <DialogContent className="max-w-4xl w-full p-6">
+          <DialogClose onClose={() => setImageDialogOpen(false)} />
+          <DialogHeader>
+            <DialogTitle className="text-2xl">Ảnh tài xế</DialogTitle>
+          </DialogHeader>
+          <div className="mt-4 flex justify-center">
+            {selectedImageUrl && (
+              <img
+                src={selectedImageUrl}
+                alt="Ảnh tài xế"
+                className="max-w-full max-h-[70vh] object-contain rounded-lg"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement
+                  target.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='300'%3E%3Crect fill='%23f3f4f6' width='400' height='300'/%3E%3Ctext x='50%25' y='50%25' dominant-baseline='middle' text-anchor='middle' fill='%239ca3af' font-family='Arial' font-size='16'%3EKhông thể tải ảnh%3C/text%3E%3C/svg%3E"
                 }}
               />
             )}

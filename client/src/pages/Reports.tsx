@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
-import { Select } from "@/components/ui/select"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Table,
   TableBody,
@@ -112,10 +112,34 @@ export default function Reports() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Báo cáo & Thống kê</h1>
-        <p className="text-gray-600 mt-1">Xem và xuất báo cáo</p>
+      <div className="flex items-start justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Báo cáo & Thống kê</h1>
+          <p className="text-gray-600 mt-1">Xem và xuất báo cáo</p>
+        </div>
+        <Button variant="outline" onClick={handleExport}>
+          <Download className="mr-2 h-4 w-4" />
+          Xuất Excel
+        </Button>
       </div>
+
+      {/* Report Type Tabs */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Loại báo cáo</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Tabs value={reportType} onValueChange={(value) => setReportType(value as ReportType)}>
+            <TabsList className="w-full justify-start">
+              <TabsTrigger value="invoices">Bảng kê hóa đơn</TabsTrigger>
+              <TabsTrigger value="vehicle-logs">Nhật trình xe</TabsTrigger>
+              <TabsTrigger value="station-activity">Xe ra vào bến</TabsTrigger>
+              <TabsTrigger value="invalid-vehicles">Xe không đủ điều kiện</TabsTrigger>
+              <TabsTrigger value="revenue">Doanh thu</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </CardContent>
+      </Card>
 
       {/* Filters */}
       <Card>
@@ -123,21 +147,7 @@ export default function Reports() {
           <CardTitle>Bộ lọc</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 md:grid-cols-4">
-            <div>
-              <Label htmlFor="reportType">Loại báo cáo</Label>
-              <Select
-                id="reportType"
-                value={reportType}
-                onChange={(e) => setReportType(e.target.value as ReportType)}
-              >
-                <option value="invoices">Bảng kê hóa đơn</option>
-                <option value="vehicle-logs">Nhật trình xe</option>
-                <option value="station-activity">Xe ra vào bến</option>
-                <option value="invalid-vehicles">Xe không đủ điều kiện</option>
-                <option value="revenue">Doanh thu</option>
-              </Select>
-            </div>
+          <div className="grid gap-4 md:grid-cols-3">
             <div>
               <Label htmlFor="startDate">Từ ngày</Label>
               <Input
@@ -165,14 +175,6 @@ export default function Reports() {
           </div>
         </CardContent>
       </Card>
-
-      {/* Actions */}
-      <div className="flex justify-end">
-        <Button variant="outline" onClick={handleExport}>
-          <Download className="mr-2 h-4 w-4" />
-          Xuất Excel
-        </Button>
-      </div>
 
       {/* Report Content */}
       <Card>

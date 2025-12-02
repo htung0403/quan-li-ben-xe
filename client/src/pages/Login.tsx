@@ -3,13 +3,15 @@ import { useNavigate } from "react-router-dom"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
-import { LogIn, User, Lock } from "lucide-react"
+import { User, Lock } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useAuthStore } from "@/store/auth.store"
+import logo from "@/assets/logo.png"
+import backgroundImage from "@/assets/ben-xe.webp"
 
 const loginSchema = z.object({
   username: z.string().min(1, "Tên đăng nhập là bắt buộc"),
@@ -50,11 +52,24 @@ export default function Login() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
-      <Card className="w-full max-w-md">
+    <div 
+      className="flex min-h-screen items-center justify-center px-4 relative"
+      style={{
+        backgroundImage: `url(${backgroundImage})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+      }}
+    >
+      <div className="absolute inset-0 bg-black/40"></div>
+      <Card className="w-full max-w-md relative z-10">
         <CardHeader className="space-y-1 text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100">
-            <LogIn className="h-6 w-6 text-primary" />
+          <div className="mx-auto mb-4 flex items-center justify-center">
+            <img 
+              src={logo} 
+              alt="Logo" 
+              className="h-20 w-auto object-contain"
+            />
           </div>
           <CardTitle className="text-2xl font-bold">Đăng nhập</CardTitle>
           <p className="text-sm text-gray-600">

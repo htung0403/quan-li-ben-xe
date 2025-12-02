@@ -41,6 +41,8 @@ type VehicleFormData = z.infer<typeof vehicleSchema>
 export default function Vehicles() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([])
   const [searchQuery, setSearchQuery] = useState("")
+  const [filterVehicleType, setFilterVehicleType] = useState("")
+  const [filterOperator, setFilterOperator] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
@@ -68,14 +70,35 @@ export default function Vehicles() {
     }
   }
 
+  // Get unique vehicle types and operators for filter options
+  const vehicleTypes = Array.from(new Set(vehicles.map((v) => v.vehicleType))).sort()
+  const operators = Array.from(
+    new Set(vehicles.map((v) => v.operatorName || v.operatorId).filter(Boolean))
+  ).sort()
+
   const filteredVehicles = vehicles.filter((vehicle) => {
+    // Search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase()
-      return (
+      const matchesSearch =
         vehicle.plateNumber.toLowerCase().includes(query) ||
         vehicle.vehicleType.toLowerCase().includes(query)
-      )
+      if (!matchesSearch) return false
     }
+
+    // Vehicle type filter
+    if (filterVehicleType && vehicle.vehicleType !== filterVehicleType) {
+      return false
+    }
+
+    // Operator filter
+    if (filterOperator) {
+      const vehicleOperator = vehicle.operatorName || vehicle.operatorId
+      if (vehicleOperator !== filterOperator) {
+        return false
+      }
+    }
+
     return true
   })
 
@@ -121,17 +144,55 @@ export default function Vehicles() {
         </Button>
       </div>
 
-      {/* Search */}
+      {/* Search and Filters */}
       <Card>
         <CardContent className="pt-6">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-            <Input
-              placeholder="Tìm kiếm theo biển số, loại xe..."
-              className="pl-10"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+          <div className="space-y-4">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+              <Input
+                placeholder="Tìm kiếm theo biển số, loại xe..."
+                className="pl-10"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="filterVehicleType" className="text-sm font-medium">
+                  Lọc theo loại xe
+                </Label>
+                <Select
+                  id="filterVehicleType"
+                  value={filterVehicleType}
+                  onChange={(e) => setFilterVehicleType(e.target.value)}
+                >
+                  <option value="">Tất cả loại xe</option>
+                  {vehicleTypes.map((type) => (
+                    <option key={type} value={type}>
+                      {type}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="filterOperator" className="text-sm font-medium">
+                  Lọc theo nhà xe
+                </Label>
+                <Select
+                  id="filterOperator"
+                  value={filterOperator}
+                  onChange={(e) => setFilterOperator(e.target.value)}
+                >
+                  <option value="">Tất cả nhà xe</option>
+                  {operators.map((operator) => (
+                    <option key={operator} value={operator}>
+                      {operator}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+            </div>
           </div>
         </CardContent>
       </Card>
