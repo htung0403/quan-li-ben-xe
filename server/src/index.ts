@@ -24,10 +24,46 @@ dotenv.config()
 const app = express()
 const PORT = Number(process.env.PORT) || 3000
 
+// CORS Configuration
+const getCorsOrigins = (): string | string[] => {
+  const corsOrigin = process.env.CORS_ORIGIN || 'http://localhost:5173'
+  
+  // Support multiple origins separated by comma
+  if (corsOrigin.includes(',')) {
+    return corsOrigin.split(',').map(origin => origin.trim())
+  }
+  
+  return corsOrigin.trim()
+}
+
 // Middleware
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || 'http://localhost:5173',
+  origin: (origin, callback) => {
+    const allowedOrigins = getCorsOrigins()
+    const originsArray = Array.isArray(allowedOrigins) ? allowedOrigins : [allowedOrigins]
+    
+    // Normalize origins (remove trailing slash)
+    const normalizedOrigins = originsArray.map(o => o.replace(/\/$/, ''))
+    
+    // Normalize request origin (remove trailing slash)
+    const normalizedOrigin = origin ? origin.replace(/\/$/, '') : null
+    
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!normalizedOrigin) {
+      return callback(null, true)
+    }
+    
+    // Check if origin is allowed
+    if (normalizedOrigins.includes(normalizedOrigin)) {
+      // Return the normalized origin (without trailing slash)
+      callback(null, normalizedOrigin)
+    } else {
+      callback(new Error('Not allowed by CORS'))
+    }
+  },
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
 }))
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
