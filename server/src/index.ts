@@ -1,4 +1,4 @@
-import express from 'express'
+import express, { Request, Response } from 'express'
 import cors from 'cors'
 import dotenv from 'dotenv'
 import { errorHandler } from './middleware/errorHandler.js'
@@ -22,7 +22,7 @@ import dashboardRoutes from './routes/dashboard.routes.js'
 dotenv.config()
 
 const app = express()
-const PORT = process.env.PORT || 3000
+const PORT = Number(process.env.PORT) || 3000
 
 // Middleware
 app.use(cors({
@@ -33,7 +33,7 @@ app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 
 // Health check
-app.get('/health', (_req: express.Request, res: express.Response) => {
+app.get('/health', (_req: Request, res: Response) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() })
 })
 
@@ -57,7 +57,7 @@ app.use('/api/dashboard', dashboardRoutes)
 app.use(errorHandler)
 
 // 404 handler
-app.use((_req: express.Request, res: express.Response) => {
+app.use((_req: Request, res: Response) => {
   res.status(404).json({ error: 'Route not found' })
 })
 
