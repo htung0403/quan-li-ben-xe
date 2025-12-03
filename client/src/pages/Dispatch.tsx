@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
 import {
   Search,
   FileCheck,
@@ -10,12 +11,17 @@ import {
   Calendar,
   User,
   Upload,
-  RefreshCw
+  RefreshCw,
+  LogOut,
+  ShieldCheck,
+  ChevronUp,
+  ChevronDown
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import { Select } from "@/components/ui/select"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   Dialog,
   DialogContent,
@@ -37,6 +43,7 @@ import { format } from "date-fns"
 type DisplayStatus = "in-station" | "permit-issued" | "paid" | "departed"
 
 export default function Dispatch() {
+  const navigate = useNavigate()
   const { records, setRecords } = useDispatchStore()
   const [searchQuery, setSearchQuery] = useState("")
   const [isLoading, setIsLoading] = useState(false)
@@ -44,7 +51,7 @@ export default function Dispatch() {
   const [selectedRecord, setSelectedRecord] = useState<DispatchRecord | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [dialogType, setDialogType] = useState<
-    "entry" | "return" | "permit" | "payment" | "depart"
+    "entry" | "return" | "permit" | "payment" | "depart" | "departure-order"
   >("entry")
 
   useEffect(() => {
@@ -181,6 +188,19 @@ export default function Dispatch() {
     } else if (status === "permit-issued") {
       buttons.push(
         <button
+          key="payment"
+          onClick={(e) => {
+            e.stopPropagation()
+            navigate(`/payment/${record.id}`)
+          }}
+          className="p-2 hover:bg-gray-100 rounded transition-colors"
+          title="Thanh toán"
+        >
+          <FileCheck className="h-4 w-4 text-gray-600" />
+        </button>
+      )
+      buttons.push(
+        <button
           key="document"
           onClick={(e) => e.stopPropagation()}
           className="p-2 hover:bg-gray-100 rounded transition-colors"
@@ -199,7 +219,59 @@ export default function Dispatch() {
           <Upload className="h-4 w-4 text-gray-600" />
         </button>
       )
-    } else if (status === "paid" || status === "departed") {
+    } else if (status === "paid") {
+      // Nếu xe đủ điều kiện (permitStatus === 'approved'), hiển thị icon "Cấp lệnh xuất bến"
+      if (record.permitStatus === 'approved') {
+        buttons.push(
+          <button
+            key="departure-order"
+            onClick={(e) => {
+              e.stopPropagation()
+              handleAction(record, "departure-order")
+            }}
+            className="p-2 hover:bg-gray-100 rounded transition-colors"
+            title="Cấp lệnh xuất bến"
+          >
+            <ShieldCheck className="h-4 w-4 text-gray-900" />
+          </button>
+        )
+      }
+      // Nếu xe không đủ điều kiện (permitStatus === 'rejected'), hiển thị icon "cho xe ra bến"
+      if (record.permitStatus === 'rejected') {
+        buttons.push(
+          <button
+            key="exit"
+            onClick={async (e) => {
+              e.stopPropagation()
+              if (confirm("Bạn có chắc chắn muốn cho xe ra bến?")) {
+                try {
+                  await dispatchService.recordExit(record.id)
+                  alert("Cho xe ra bến thành công!")
+                  loadRecords()
+                } catch (error) {
+                  console.error("Failed to record exit:", error)
+                  alert("Không thể cho xe ra bến. Vui lòng thử lại sau.")
+                }
+              }
+            }}
+            className="p-2 hover:bg-gray-100 rounded transition-colors"
+            title="Cho xe ra bến"
+          >
+            <LogOut className="h-4 w-4 text-orange-600" />
+          </button>
+        )
+      }
+      buttons.push(
+        <button
+          key="upload"
+          onClick={(e) => e.stopPropagation()}
+          className="p-2 hover:bg-gray-100 rounded transition-colors"
+          title="Tải lên"
+        >
+          <Upload className="h-4 w-4 text-gray-600" />
+        </button>
+      )
+    } else if (status === "departed") {
       buttons.push(
         <button
           key="upload"
@@ -239,7 +311,7 @@ export default function Dispatch() {
           if (status === "in-station") {
             handleAction(record, "permit")
           } else if (status === "permit-issued") {
-            handleAction(record, "payment")
+            navigate(`/payment/${record.id}`)
           } else if (status === "paid") {
             handleAction(record, "depart")
           }
@@ -446,8 +518,8 @@ export default function Dispatch() {
               {dialogType === "entry" && "Cho xe vào bến"}
               {dialogType === "return" && "Xác nhận trả khách"}
               {dialogType === "permit" && "Cấp phép lên nốt"}
-              {dialogType === "payment" && "Thanh toán"}
               {dialogType === "depart" && "Xuất bến"}
+              {dialogType === "departure-order" && "Cấp lệnh xuất bến"}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
@@ -478,11 +550,17 @@ export default function Dispatch() {
                 }}
               />
             )}
-            {dialogType === "payment" && selectedRecord && (
-              <PaymentForm record={selectedRecord} onClose={() => setDialogOpen(false)} />
-            )}
             {dialogType === "depart" && selectedRecord && (
               <DepartForm record={selectedRecord} onClose={() => setDialogOpen(false)} />
+            )}
+            {dialogType === "departure-order" && selectedRecord && (
+              <DepartureOrderForm 
+                record={selectedRecord} 
+                onClose={() => setDialogOpen(false)}
+                onSuccess={() => {
+                  loadRecords()
+                }}
+              />
             )}
           </div>
         </DialogContent>
@@ -491,49 +569,202 @@ export default function Dispatch() {
   )
 }
 
-// Form components
-function PaymentForm({ record, onClose }: { record: DispatchRecord; onClose: () => void }) {
+// Departure Order Form component
+function DepartureOrderForm({ 
+  record, 
+  onClose,
+  onSuccess 
+}: { 
+  record: DispatchRecord
+  onClose: () => void
+  onSuccess?: () => void
+}) {
+  const [passengersDeparting, setPassengersDeparting] = useState("8")
+  const [isLoading, setIsLoading] = useState(false)
+  const [signAndTransmit, setSignAndTransmit] = useState(true)
+  const [printRepresentation, setPrintRepresentation] = useState(false)
+
+  const handleIncrement = () => {
+    const current = parseInt(passengersDeparting) || 0
+    setPassengersDeparting((current + 1).toString())
+  }
+
+  const handleDecrement = () => {
+    const current = parseInt(passengersDeparting) || 0
+    if (current > 0) {
+      setPassengersDeparting((current - 1).toString())
+    }
+  }
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    // Handle submit
-    onClose()
+    
+    if (!passengersDeparting || parseInt(passengersDeparting) <= 0) {
+      alert("Vui lòng nhập số khách xuất bến hợp lệ")
+      return
+    }
+
+    setIsLoading(true)
+    try {
+      await dispatchService.issueDepartureOrder(record.id, parseInt(passengersDeparting))
+      alert("Cấp lệnh xuất bến thành công!")
+      if (onSuccess) {
+        onSuccess()
+      }
+      onClose()
+    } catch (error) {
+      console.error("Failed to issue departure order:", error)
+      alert("Không thể cấp lệnh xuất bến. Vui lòng thử lại sau.")
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="space-y-4">
-        <div className="rounded-lg bg-blue-50 p-4 border border-blue-200">
-          <Label className="text-sm font-medium text-gray-600">Biển số xe</Label>
-          <p className="text-lg font-semibold text-gray-900 mt-1">{record.vehiclePlateNumber}</p>
+      {/* Số khách xuất bến với nút tăng/giảm */}
+      <div>
+        <Label htmlFor="passengersDeparting" className="text-sm font-medium text-gray-700 mb-2 block">
+          Số khách xuất bến
+        </Label>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleDecrement}
+            className="p-2 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+            disabled={parseInt(passengersDeparting) <= 0}
+          >
+            <ChevronDown className="h-4 w-4" />
+          </button>
+          <Input
+            id="passengersDeparting"
+            type="number"
+            value={passengersDeparting}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassengersDeparting(e.target.value)}
+            required
+            className="flex-1 text-center"
+            min="0"
+          />
+          <button
+            type="button"
+            onClick={handleIncrement}
+            className="p-2 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+          >
+            <ChevronUp className="h-4 w-4" />
+          </button>
         </div>
-        <div className="rounded-lg border border-gray-200 bg-gray-50 p-6">
-          <p className="text-sm font-medium text-gray-700 mb-4">Chi tiết thanh toán:</p>
-          <div className="space-y-3">
-            <div className="flex justify-between items-center py-2 border-b border-gray-200">
-              <span className="text-gray-700">Phí vào bến</span>
-              <span className="font-medium text-gray-900">50,000 đ</span>
+      </div>
+
+      {/* Layout 2 cột: Preview bên trái, Thông tin bên phải */}
+      <div className="grid grid-cols-2 gap-4 min-h-[300px]">
+        {/* Bên trái: Preview/Document */}
+        <div className="border border-gray-200 rounded-lg p-4 flex flex-col items-center justify-center bg-gray-50">
+          <div className="text-center text-gray-500">
+            <Search className="h-12 w-12 mx-auto mb-2 text-gray-400" />
+            <p className="text-sm">Không có bản thể hiện</p>
+          </div>
+        </div>
+
+        {/* Bên phải: Thông tin */}
+        <div className="border border-gray-200 rounded-lg p-4 bg-white">
+          <h3 className="font-semibold text-gray-900 mb-3">Thông tin xe</h3>
+          <div className="space-y-2 text-sm">
+            <div>
+              <span className="text-gray-600">Biển số xe:</span>
+              <span className="ml-2 font-medium">{record.vehiclePlateNumber}</span>
             </div>
-            <div className="flex justify-between items-center py-2 border-b border-gray-200">
-              <span className="text-gray-700">Phí dịch vụ</span>
-              <span className="font-medium text-gray-900">100,000 đ</span>
-            </div>
-            <div className="flex justify-between items-center pt-3 mt-3 border-t-2 border-gray-300">
-              <span className="text-lg font-bold text-gray-900">Tổng cộng</span>
-              <span className="text-lg font-bold text-primary">150,000 đ</span>
-            </div>
+            {record.routeName && (
+              <div>
+                <span className="text-gray-600">Tuyến:</span>
+                <span className="ml-2 font-medium">{record.routeName}</span>
+              </div>
+            )}
+            {record.driverName && (
+              <div>
+                <span className="text-gray-600">Tài xế:</span>
+                <span className="ml-2 font-medium">{record.driverName}</span>
+              </div>
+            )}
+            {record.seatCount && (
+              <div>
+                <span className="text-gray-600">Số ghế đã cấp:</span>
+                <span className="ml-2 font-medium">{record.seatCount}</span>
+              </div>
+            )}
+            {record.plannedDepartureTime && (
+              <div>
+                <span className="text-gray-600">Giờ xuất bến kế hoạch:</span>
+                <span className="ml-2 font-medium">
+                  {format(new Date(record.plannedDepartureTime), "HH:mm dd/MM/yyyy")}
+                </span>
+              </div>
+            )}
           </div>
         </div>
       </div>
-      <div className="flex justify-end gap-2 pt-4 border-t">
-        <Button type="button" variant="outline" onClick={onClose}>
-          Hủy
+
+      {/* Link xem QR code */}
+      <div>
+        <button
+          type="button"
+          onClick={() => {
+            // TODO: Implement QR code list view
+            alert("Chức năng xem chi tiết danh sách mã QR đang được phát triển")
+          }}
+          className="text-red-600 hover:text-red-700 text-sm underline"
+        >
+          Xem chi tiết danh sách mã QR
+        </button>
+      </div>
+
+      {/* Checkboxes */}
+      <div className="space-y-3 pt-4 border-t">
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="signAndTransmit"
+            checked={signAndTransmit}
+            onChange={(e) => setSignAndTransmit(e.target.checked)}
+          />
+          <Label htmlFor="signAndTransmit" className="cursor-pointer text-sm">
+            Ký lệnh và truyền tải
+          </Label>
+        </div>
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="printRepresentation"
+            checked={printRepresentation}
+            onChange={(e) => setPrintRepresentation(e.target.checked)}
+          />
+          <Label htmlFor="printRepresentation" className="cursor-pointer text-sm">
+            In bản thể hiện
+          </Label>
+        </div>
+      </div>
+
+      {/* Buttons */}
+      <div className="flex justify-end gap-3 pt-4 border-t">
+        <Button 
+          type="button" 
+          variant="outline" 
+          onClick={onClose} 
+          disabled={isLoading}
+          className="text-blue-600 border-blue-600 hover:bg-blue-50"
+        >
+          HỦY
         </Button>
-        <Button type="submit">Xác nhận thanh toán</Button>
+        <Button 
+          type="submit" 
+          disabled={isLoading}
+          className="bg-blue-600 hover:bg-blue-700"
+        >
+          {isLoading ? "Đang xử lý..." : "XÁC NHẬN"}
+        </Button>
       </div>
     </form>
   )
 }
 
+// Form components
 function DepartForm({ record, onClose }: { record: DispatchRecord; onClose: () => void }) {
   const [exitTime, setExitTime] = useState(new Date().toISOString().slice(0, 16))
   const [passengerCount, setPassengerCount] = useState("")

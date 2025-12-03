@@ -43,7 +43,7 @@ export default function Login() {
       setIsLoading(true)
       setError("")
       await login(data.username, data.password, data.rememberMe)
-      navigate("/")
+      navigate("/") // Chuyển về trang chủ sau khi đăng nhập
     } catch (err) {
       setError("Tên đăng nhập hoặc mật khẩu không đúng")
     } finally {

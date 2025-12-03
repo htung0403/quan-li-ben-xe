@@ -1,5 +1,6 @@
 import { Link, useLocation } from "react-router-dom"
 import {
+  Home,
   LayoutDashboard,
   CalendarClock,
   Bus,
@@ -14,7 +15,8 @@ import { Button } from "@/components/ui/button"
 import logo from "@/assets/logo.png"
 
 const navigation = [
-  { name: "Tổng quan", href: "/", icon: LayoutDashboard },
+  { name: "Trang chủ", href: "/", icon: Home },
+  { name: "Tổng quan", href: "/dashboard", icon: LayoutDashboard },
   { name: "Điều độ xe", href: "/dispatch", icon: CalendarClock },
   { name: "Quản lý xe", href: "/vehicles", icon: Bus },
   { name: "Quản lý lái xe", href: "/drivers", icon: Users },

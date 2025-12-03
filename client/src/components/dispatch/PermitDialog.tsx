@@ -170,6 +170,12 @@ export function PermitDialog({
       printDisplay: boolean
     }
   ) => {
+    if (!transportOrderCode || !routeId || !scheduleId || !departureDate) {
+      alert("Vui lòng điền đầy đủ các trường bắt buộc")
+      setNotEligibleDialogOpen(false)
+      return
+    }
+
     // Options có thể được sử dụng trong tương lai để xử lý logic bổ sung
     // Ví dụ: tạo đơn hàng, ký lệnh, in bản thể hiện
     console.log('Options:', options)
@@ -190,12 +196,18 @@ export function PermitDialog({
         .map(id => reasonDescriptions[id] || id)
         .join('; ')
 
+      // Tính toán plannedDepartureTime
+      const plannedDepartureTime = useOtherDepartureTime && departureTime
+        ? new Date(`${departureDate}T${departureTime}`).toISOString()
+        : record.plannedDepartureTime || new Date().toISOString()
+
+      // Vẫn cấp phép (approved) nhưng lưu lại lý do không đủ điều kiện
       await dispatchService.issuePermit(record.id, {
         transportOrderCode,
-        plannedDepartureTime: record.plannedDepartureTime || new Date().toISOString(),
+        plannedDepartureTime,
         seatCount: parseInt(seatCount),
-        permitStatus: 'rejected',
-        rejectionReason: rejectionReason
+        permitStatus: 'approved', // Vẫn cấp phép để xe chuyển sang cột "Đã cấp nốt"
+        rejectionReason: rejectionReason // Lưu lý do để có thể xem lại sau
       })
 
       if (onSuccess) {
@@ -204,8 +216,8 @@ export function PermitDialog({
       setNotEligibleDialogOpen(false)
       onClose()
     } catch (error) {
-      console.error("Failed to reject permit:", error)
-      alert("Không thể từ chối cấp phép. Vui lòng thử lại sau.")
+      console.error("Failed to issue permit:", error)
+      alert("Không thể cấp phép. Vui lòng thử lại sau.")
     } finally {
       setIsLoading(false)
     }
