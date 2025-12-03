@@ -42,48 +42,35 @@ export default function Reports() {
   const loadReport = useCallback(async () => {
     setIsLoading(true)
     try {
-      // Use mock data - replace with actual API call when backend is ready
-      // const filter = { startDate, endDate }
-      // let result = await reportService.getInvoices(filter)
-      
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 500))
-      
-      const {
-        mockInvoiceReports,
-        mockRevenueReports,
-        mockVehicleLogs,
-        mockStationActivity,
-        mockInvalidVehicles,
-      } = await import("@/mocks/reports.mock")
-      
+      const filter = { startDate, endDate }
       let result: any[] = []
 
       switch (reportType) {
         case "invoices":
-          result = mockInvoiceReports
+          result = await reportService.getInvoices(filter)
           break
         case "vehicle-logs":
-          result = mockVehicleLogs
+          result = await reportService.getVehicleLogs(filter)
           break
         case "station-activity":
-          result = mockStationActivity
+          result = await reportService.getStationActivity(filter)
           break
         case "invalid-vehicles":
-          result = mockInvalidVehicles
+          result = await reportService.getInvalidVehicles(filter)
           break
         case "revenue":
-          result = mockRevenueReports
+          result = await reportService.getRevenue(filter)
           break
       }
 
       setData(result)
     } catch (error) {
       console.error("Failed to load report:", error)
+      alert("Không thể tải báo cáo. Vui lòng thử lại sau.")
     } finally {
       setIsLoading(false)
     }
-  }, [reportType])
+  }, [reportType, startDate, endDate])
 
   // Auto load report when reportType changes
   useEffect(() => {

@@ -38,6 +38,15 @@ const vehicleSchema = z.object({
 
 type VehicleFormData = z.infer<typeof vehicleSchema>
 
+// Helper functions to extract display values
+const getVehicleTypeName = (vehicle: Vehicle): string => {
+  return vehicle.vehicleType?.name || vehicle.vehicleTypeId || ""
+}
+
+const getOperatorName = (vehicle: Vehicle): string => {
+  return vehicle.operator?.name || vehicle.operatorId || ""
+}
+
 export default function Vehicles() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([])
   const [searchQuery, setSearchQuery] = useState("")
@@ -55,48 +64,45 @@ export default function Vehicles() {
   const loadVehicles = async () => {
     setIsLoading(true)
     try {
-      // Use mock data - replace with actual API call when backend is ready
-      // const data = await vehicleService.getAll()
-      // setVehicles(data)
-      
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 500))
-      const { mockVehicles } = await import("@/mocks/vehicles.mock")
-      setVehicles(mockVehicles)
+      const data = await vehicleService.getAll()
+      setVehicles(data)
     } catch (error) {
       console.error("Failed to load vehicles:", error)
+      alert("Không thể tải danh sách xe. Vui lòng thử lại sau.")
     } finally {
       setIsLoading(false)
     }
   }
 
   // Get unique vehicle types and operators for filter options
-  const vehicleTypes = Array.from(new Set(vehicles.map((v) => v.vehicleType))).sort()
+  const vehicleTypes = Array.from(
+    new Set(vehicles.map(getVehicleTypeName).filter(Boolean))
+  ).sort()
   const operators = Array.from(
-    new Set(vehicles.map((v) => v.operatorName || v.operatorId).filter(Boolean))
+    new Set(vehicles.map(getOperatorName).filter(Boolean))
   ).sort()
 
   const filteredVehicles = vehicles.filter((vehicle) => {
+    const vehicleTypeName = getVehicleTypeName(vehicle)
+    const operatorName = getOperatorName(vehicle)
+
     // Search filter
     if (searchQuery) {
       const query = searchQuery.toLowerCase()
       const matchesSearch =
         vehicle.plateNumber.toLowerCase().includes(query) ||
-        vehicle.vehicleType.toLowerCase().includes(query)
+        vehicleTypeName.toLowerCase().includes(query)
       if (!matchesSearch) return false
     }
 
     // Vehicle type filter
-    if (filterVehicleType && vehicle.vehicleType !== filterVehicleType) {
+    if (filterVehicleType && vehicleTypeName !== filterVehicleType) {
       return false
     }
 
     // Operator filter
-    if (filterOperator) {
-      const vehicleOperator = vehicle.operatorName || vehicle.operatorId
-      if (vehicleOperator !== filterOperator) {
-        return false
-      }
+    if (filterOperator && operatorName !== filterOperator) {
+      return false
     }
 
     return true
@@ -229,11 +235,11 @@ export default function Vehicles() {
                   <TableCell className="font-medium">
                     {vehicle.plateNumber}
                   </TableCell>
-                  <TableCell>{vehicle.vehicleType}</TableCell>
+                  <TableCell>{getVehicleTypeName(vehicle)}</TableCell>
                   <TableCell>{vehicle.seatCapacity}</TableCell>
-                  <TableCell>{vehicle.operatorName || vehicle.operatorId}</TableCell>
+                  <TableCell>{getOperatorName(vehicle)}</TableCell>
                   <TableCell>
-                    <StatusBadge status={vehicle.status} />
+                    <StatusBadge status={vehicle.isActive ? "active" : "inactive"} />
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
@@ -319,7 +325,9 @@ function VehicleView({ vehicle }: { vehicle: Vehicle }) {
           </div>
           <div className="space-y-2">
             <Label className="text-base font-semibold">Loại xe</Label>
-            <p className="text-lg font-medium text-gray-900">{vehicle.vehicleType}</p>
+            <p className="text-lg font-medium text-gray-900">
+              {getVehicleTypeName(vehicle)}
+            </p>
           </div>
           <div className="space-y-2">
             <Label className="text-base font-semibold">Số ghế</Label>
@@ -328,25 +336,31 @@ function VehicleView({ vehicle }: { vehicle: Vehicle }) {
           <div className="space-y-2">
             <Label className="text-base font-semibold">Nhà xe</Label>
             <p className="text-lg font-medium text-gray-900">
-              {vehicle.operatorName || vehicle.operatorId}
+              {getOperatorName(vehicle)}
             </p>
           </div>
         </div>
       </TabsContent>
       <TabsContent value="documents" className="space-y-4 mt-6">
         <div className="space-y-4">
-          <DocumentCard
-            title="Đăng kiểm"
-            doc={vehicle.documents.inspection}
-          />
-          <DocumentCard
-            title="Phù hiệu"
-            doc={vehicle.documents.permit}
-          />
-          <DocumentCard
-            title="Bảo hiểm"
-            doc={vehicle.documents.insurance}
-          />
+          {vehicle.documents?.inspection && (
+            <DocumentCard
+              title="Đăng kiểm"
+              doc={vehicle.documents.inspection}
+            />
+          )}
+          {vehicle.documents?.operation_permit && (
+            <DocumentCard
+              title="Phù hiệu"
+              doc={vehicle.documents.operation_permit}
+            />
+          )}
+          {vehicle.documents?.insurance && (
+            <DocumentCard
+              title="Bảo hiểm"
+              doc={vehicle.documents.insurance}
+            />
+          )}
         </div>
       </TabsContent>
       <TabsContent value="history" className="mt-6">

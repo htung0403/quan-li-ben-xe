@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Bus, CheckCircle, DollarSign, AlertTriangle } from "lucide-react"
 import { DashboardCard } from "@/components/layout/DashboardCard"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -13,16 +13,56 @@ import {
 import { StatusBadge } from "@/components/layout/StatusBadge"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
 import { format } from "date-fns"
-import {
-  mockDashboardStats,
-  mockChartData,
-  mockRecentActivity,
-  mockWarnings,
-} from "@/mocks/dashboard.mock"
+import { dashboardService } from "@/services/dashboard.service"
+import type { DashboardStats, ChartDataPoint, RecentActivity, Warning } from "@/services/dashboard.service"
 
 export default function Dashboard() {
-  const [recentActivity] = useState(mockRecentActivity)
-  const [warnings] = useState(mockWarnings)
+  const [stats, setStats] = useState<DashboardStats>({
+    vehiclesInStation: 0,
+    vehiclesDepartedToday: 0,
+    revenueToday: 0,
+    invalidVehicles: 0,
+  })
+  const [chartData, setChartData] = useState<ChartDataPoint[]>([])
+  const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([])
+  const [warnings, setWarnings] = useState<Warning[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    loadDashboardData()
+  }, [])
+
+  const loadDashboardData = async () => {
+    setIsLoading(true)
+    try {
+      // Try to load all data at once, fallback to individual calls
+      try {
+        const data = await dashboardService.getDashboardData()
+        setStats(data.stats)
+        setChartData(data.chartData)
+        setRecentActivity(data.recentActivity)
+        setWarnings(data.warnings)
+      } catch {
+        // If combined endpoint doesn't exist, load individually
+        const [statsData, chartDataData, activityData, warningsData] = await Promise.all([
+          dashboardService.getStats().catch(() => null),
+          dashboardService.getChartData().catch(() => []),
+          dashboardService.getRecentActivity().catch(() => []),
+          dashboardService.getWarnings().catch(() => []),
+        ])
+        
+        if (statsData) setStats(statsData)
+        if (chartDataData.length > 0) setChartData(chartDataData)
+        if (activityData.length > 0) setRecentActivity(activityData)
+        if (warningsData.length > 0) setWarnings(warningsData)
+      }
+    } catch (error) {
+      console.error("Failed to load dashboard data:", error)
+      // Keep default values on error
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -37,25 +77,23 @@ export default function Dashboard() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <DashboardCard
           title="Xe trong bến"
-          value={mockDashboardStats.vehiclesInStation}
+          value={stats.vehiclesInStation}
           icon={Bus}
           description="Hiện tại"
         />
         <DashboardCard
           title="Xe đã xuất bến hôm nay"
-          value={mockDashboardStats.vehiclesDepartedToday}
+          value={stats.vehiclesDepartedToday}
           icon={CheckCircle}
-          trend={{ value: 12, isPositive: true }}
         />
         <DashboardCard
           title="Doanh thu hôm nay"
-          value={`${(mockDashboardStats.revenueToday / 1000000).toFixed(1)}M`}
+          value={`${(stats.revenueToday / 1000000).toFixed(1)}M`}
           icon={DollarSign}
-          trend={{ value: 8, isPositive: true }}
         />
         <DashboardCard
           title="Xe không đủ điều kiện"
-          value={mockDashboardStats.invalidVehicles}
+          value={stats.invalidVehicles}
           icon={AlertTriangle}
           description="Cần xử lý"
         />
@@ -68,18 +106,24 @@ export default function Dashboard() {
         </CardHeader>
         <CardContent>
           <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={mockChartData}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="hour" />
-              <YAxis />
-              <Tooltip />
-              <Line
-                type="monotone"
-                dataKey="count"
-                stroke="#3B82F6"
-                strokeWidth={2}
-              />
-            </LineChart>
+            {isLoading || chartData.length === 0 ? (
+              <div className="flex items-center justify-center h-full text-gray-500">
+                Đang tải dữ liệu...
+              </div>
+            ) : (
+              <LineChart data={chartData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="hour" />
+                <YAxis />
+                <Tooltip />
+                <Line
+                  type="monotone"
+                  dataKey="count"
+                  stroke="#3B82F6"
+                  strokeWidth={2}
+                />
+              </LineChart>
+            )}
           </ResponsiveContainer>
         </CardContent>
       </Card>
@@ -94,26 +138,32 @@ export default function Dashboard() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {warnings.map((warning, index) => (
-                <div
-                  key={index}
-                  className="flex items-center justify-between rounded-lg border border-yellow-200 bg-yellow-50 p-3"
-                >
-                  <div>
-                    <p className="font-medium text-gray-900">
-                      {warning.type === "vehicle"
-                        ? `Xe: ${warning.plateNumber}`
-                        : `Lái xe: ${warning.name}`}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      {warning.document} - Hết hạn:{" "}
-                      {format(warning.expiryDate, "dd/MM/yyyy")}
-                    </p>
+            {isLoading ? (
+              <div className="text-center text-gray-500 py-4">Đang tải...</div>
+            ) : warnings.length === 0 ? (
+              <div className="text-center text-gray-500 py-4">Không có cảnh báo</div>
+            ) : (
+              <div className="space-y-3">
+                {warnings.map((warning, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between rounded-lg border border-yellow-200 bg-yellow-50 p-3"
+                  >
+                    <div>
+                      <p className="font-medium text-gray-900">
+                        {warning.type === "vehicle"
+                          ? `Xe: ${warning.plateNumber}`
+                          : `Lái xe: ${warning.name}`}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        {warning.document} - Hết hạn:{" "}
+                        {format(new Date(warning.expiryDate), "dd/MM/yyyy")}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -133,20 +183,34 @@ export default function Dashboard() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {recentActivity.map((activity) => (
-                  <TableRow key={activity.id}>
-                    <TableCell className="font-medium">
-                      {activity.vehiclePlateNumber}
-                    </TableCell>
-                    <TableCell>{activity.route}</TableCell>
-                    <TableCell>
-                      {format(new Date(activity.entryTime), "HH:mm")}
-                    </TableCell>
-                    <TableCell>
-                      <StatusBadge status={activity.status as any} />
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center py-4 text-gray-500">
+                      Đang tải...
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : recentActivity.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={4} className="text-center py-4 text-gray-500">
+                      Không có hoạt động gần đây
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  recentActivity.map((activity) => (
+                    <TableRow key={activity.id}>
+                      <TableCell className="font-medium">
+                        {activity.vehiclePlateNumber}
+                      </TableCell>
+                      <TableCell>{activity.route}</TableCell>
+                      <TableCell>
+                        {format(new Date(activity.entryTime), "HH:mm")}
+                      </TableCell>
+                      <TableCell>
+                        <StatusBadge status={activity.status as any} />
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </CardContent>

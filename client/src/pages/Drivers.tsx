@@ -24,21 +24,35 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Label } from "@/components/ui/label"
 import { driverService } from "@/services/driver.service"
 import type { Driver, DriverInput } from "@/types"
-import { format } from "date-fns"
+import { format, isValid, parseISO } from "date-fns"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 
 const driverSchema = z.object({
+  operatorId: z.string().uuid("Vui lòng chọn nhà xe"),
   fullName: z.string().min(1, "Họ tên là bắt buộc"),
-  phoneNumber: z.string().min(1, "Số điện thoại là bắt buộc"),
+  idNumber: z.string().min(1, "Số CMND/CCCD là bắt buộc"),
+  phone: z.string().optional(),
   email: z.string().email("Email không hợp lệ").optional().or(z.literal("")),
   licenseNumber: z.string().min(1, "Số bằng lái là bắt buộc"),
-  licenseExpiry: z.string().min(1, "Ngày hết hạn bằng lái là bắt buộc"),
-  contractExpiry: z.string().optional(),
+  licenseClass: z.string().min(1, "Hạng bằng lái là bắt buộc"),
+  licenseExpiryDate: z.string().min(1, "Ngày hết hạn bằng lái là bắt buộc"),
+  licenseIssueDate: z.string().optional(),
+  healthCertificateExpiry: z.string().optional(),
+  dateOfBirth: z.string().optional(),
+  address: z.string().optional(),
+  imageUrl: z.string().url().optional().or(z.literal("")),
 })
 
 type DriverFormData = z.infer<typeof driverSchema>
+
+// Helper function to safely format dates
+const formatDate = (dateString: string | undefined | null): string => {
+  if (!dateString) return "N/A"
+  const date = typeof dateString === 'string' ? parseISO(dateString) : new Date(dateString)
+  return isValid(date) ? format(date, "dd/MM/yyyy") : "N/A"
+}
 
 export default function Drivers() {
   const [drivers, setDrivers] = useState<Driver[]>([])
@@ -57,16 +71,12 @@ export default function Drivers() {
   const loadDrivers = async () => {
     setIsLoading(true)
     try {
-      // Use mock data - replace with actual API call when backend is ready
-      // const data = await driverService.getAll()
-      // setDrivers(data)
-      
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 500))
-      const { mockDrivers } = await import("@/mocks/drivers.mock")
-      setDrivers(mockDrivers)
+      const data = await driverService.getAll()
+      setDrivers(data)
     } catch (error) {
       console.error("Failed to load drivers:", error)
+      // Show error message to user
+      alert("Không thể tải danh sách lái xe. Vui lòng thử lại sau.")
     } finally {
       setIsLoading(false)
     }
@@ -77,7 +87,7 @@ export default function Drivers() {
       const query = searchQuery.toLowerCase()
       return (
         driver.fullName.toLowerCase().includes(query) ||
-        driver.phoneNumber.toLowerCase().includes(query) ||
+        (driver.phone || '').toLowerCase().includes(query) ||
         driver.licenseNumber.toLowerCase().includes(query)
       )
     }
@@ -177,13 +187,13 @@ export default function Drivers() {
               filteredDrivers.map((driver) => (
                 <TableRow key={driver.id}>
                   <TableCell className="font-medium">{driver.fullName}</TableCell>
-                  <TableCell>{driver.phoneNumber}</TableCell>
+                  <TableCell>{driver.phone || 'N/A'}</TableCell>
                   <TableCell>{driver.licenseNumber}</TableCell>
                   <TableCell>
-                    {format(new Date(driver.licenseExpiry), "dd/MM/yyyy")}
+                    {formatDate(driver.licenseExpiryDate)}
                   </TableCell>
                   <TableCell>
-                    <StatusBadge status={driver.status} />
+                    <StatusBadge status={driver.isActive ? 'active' : 'inactive'} />
                   </TableCell>
                   <TableCell>
                     {driver.imageUrl ? (
@@ -316,7 +326,7 @@ function DriverView({ driver }: { driver: Driver }) {
           </div>
           <div className="space-y-2">
             <Label className="text-base font-semibold">Số điện thoại</Label>
-            <p className="text-lg font-medium text-gray-900">{driver.phoneNumber}</p>
+            <p className="text-lg font-medium text-gray-900">{driver.phone || 'N/A'}</p>
           </div>
           {driver.email && (
             <div className="space-y-2">
@@ -335,22 +345,13 @@ function DriverView({ driver }: { driver: Driver }) {
           <div className="space-y-2">
             <Label className="text-base font-semibold">Ngày hết hạn</Label>
             <p className="text-lg font-medium text-gray-900">
-              {format(new Date(driver.licenseExpiry), "dd/MM/yyyy")}
+              {formatDate(driver.licenseExpiryDate)}
             </p>
           </div>
         </div>
       </TabsContent>
       <TabsContent value="contract" className="mt-6">
-        {driver.contractExpiry ? (
-          <div className="space-y-2">
-            <Label className="text-base font-semibold">Ngày hết hạn hợp đồng</Label>
-            <p className="text-lg font-medium text-gray-900">
-              {format(new Date(driver.contractExpiry), "dd/MM/yyyy")}
-            </p>
-          </div>
-        ) : (
-          <p className="text-sm text-gray-500">Chưa có thông tin hợp đồng</p>
-        )}
+        <p className="text-sm text-gray-500">Thông tin hợp đồng sẽ được quản lý riêng</p>
       </TabsContent>
       <TabsContent value="history" className="mt-6">
         <p className="text-sm text-gray-500">Lịch sử điều độ sẽ được hiển thị ở đây</p>
@@ -378,13 +379,27 @@ function DriverForm({
     resolver: zodResolver(driverSchema),
     defaultValues: driver
       ? {
-          ...driver,
-          licenseExpiry: driver.licenseExpiry
-            ? new Date(driver.licenseExpiry).toISOString().split("T")[0]
+          operatorId: driver.operatorId,
+          fullName: driver.fullName,
+          idNumber: driver.idNumber,
+          phone: driver.phone || "",
+          email: driver.email || "",
+          licenseNumber: driver.licenseNumber,
+          licenseClass: driver.licenseClass,
+          licenseExpiryDate: driver.licenseExpiryDate
+            ? new Date(driver.licenseExpiryDate).toISOString().split("T")[0]
             : "",
-          contractExpiry: driver.contractExpiry
-            ? new Date(driver.contractExpiry).toISOString().split("T")[0]
+          licenseIssueDate: driver.licenseIssueDate
+            ? new Date(driver.licenseIssueDate).toISOString().split("T")[0]
             : "",
+          healthCertificateExpiry: driver.healthCertificateExpiry
+            ? new Date(driver.healthCertificateExpiry).toISOString().split("T")[0]
+            : "",
+          dateOfBirth: driver.dateOfBirth
+            ? new Date(driver.dateOfBirth).toISOString().split("T")[0]
+            : "",
+          address: driver.address || "",
+          imageUrl: driver.imageUrl || "",
         }
       : undefined,
   })
@@ -417,7 +432,7 @@ function DriverForm({
       setValue("licenseNumber", licenseNumber)
       setValue("fullName", fullName)
       if (licenseExpiry) {
-        setValue("licenseExpiry", licenseExpiry)
+        setValue("licenseExpiryDate", licenseExpiry)
       }
 
       return true
@@ -472,16 +487,16 @@ function DriverForm({
           )}
         </div>
         <div className="space-y-2">
-          <Label htmlFor="phoneNumber" className="text-base font-semibold">
-            Số điện thoại *
+          <Label htmlFor="phone" className="text-base font-semibold">
+            Số điện thoại
           </Label>
           <Input
-            id="phoneNumber"
+            id="phone"
             className="h-11"
-            {...register("phoneNumber")}
+            {...register("phone")}
           />
-          {errors.phoneNumber && (
-            <p className="text-sm text-red-600 mt-1">{errors.phoneNumber.message}</p>
+          {errors.phone && (
+            <p className="text-sm text-red-600 mt-1">{errors.phone.message}</p>
           )}
         </div>
         <div className="space-y-2">
@@ -512,29 +527,59 @@ function DriverForm({
           )}
         </div>
         <div className="space-y-2">
-          <Label htmlFor="licenseExpiry" className="text-base font-semibold">
+          <Label htmlFor="licenseExpiryDate" className="text-base font-semibold">
             Ngày hết hạn bằng lái *
           </Label>
           <Input
-            id="licenseExpiry"
+            id="licenseExpiryDate"
             type="date"
             className="h-11"
-            {...register("licenseExpiry")}
+            {...register("licenseExpiryDate")}
           />
-          {errors.licenseExpiry && (
-            <p className="text-sm text-red-600 mt-1">{errors.licenseExpiry.message}</p>
+          {errors.licenseExpiryDate && (
+            <p className="text-sm text-red-600 mt-1">{errors.licenseExpiryDate.message}</p>
           )}
         </div>
         <div className="space-y-2">
-          <Label htmlFor="contractExpiry" className="text-base font-semibold">
-            Ngày hết hạn hợp đồng
+          <Label htmlFor="licenseClass" className="text-base font-semibold">
+            Hạng bằng lái *
           </Label>
           <Input
-            id="contractExpiry"
-            type="date"
+            id="licenseClass"
             className="h-11"
-            {...register("contractExpiry")}
+            placeholder="B1, B2, D, E..."
+            {...register("licenseClass")}
           />
+          {errors.licenseClass && (
+            <p className="text-sm text-red-600 mt-1">{errors.licenseClass.message}</p>
+          )}
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="idNumber" className="text-base font-semibold">
+            Số CMND/CCCD *
+          </Label>
+          <Input
+            id="idNumber"
+            className="h-11"
+            {...register("idNumber")}
+          />
+          {errors.idNumber && (
+            <p className="text-sm text-red-600 mt-1">{errors.idNumber.message}</p>
+          )}
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="operatorId" className="text-base font-semibold">
+            Nhà xe *
+          </Label>
+          <Input
+            id="operatorId"
+            className="h-11"
+            placeholder="Nhập ID nhà xe (tạm thời)"
+            {...register("operatorId")}
+          />
+          {errors.operatorId && (
+            <p className="text-sm text-red-600 mt-1">{errors.operatorId.message}</p>
+          )}
         </div>
       </div>
       <div className="flex justify-end gap-3 pt-4 border-t">

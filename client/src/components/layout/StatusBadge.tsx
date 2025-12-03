@@ -1,8 +1,11 @@
 import { Badge } from "@/components/ui/badge"
 import type { DispatchStatus } from "@/types"
 
+// Display status type for UI (different from backend status)
+type DisplayStatus = "in-station" | "permit-issued" | "paid" | "departed"
+
 interface StatusBadgeProps {
-  status: DispatchStatus | "active" | "inactive" | "maintenance" | "suspended"
+  status: DispatchStatus | DisplayStatus | "active" | "inactive" | "maintenance" | "suspended"
   label?: string
 }
 

@@ -2,8 +2,11 @@ import api from '@/lib/api'
 import type { Vehicle, VehicleInput } from '@/types'
 
 export const vehicleService = {
-  getAll: async (): Promise<Vehicle[]> => {
-    const response = await api.get<Vehicle[]>('/vehicles')
+  getAll: async (operatorId?: string, isActive?: boolean): Promise<Vehicle[]> => {
+    const params: Record<string, string> = {}
+    if (operatorId) params.operatorId = operatorId
+    if (isActive !== undefined) params.isActive = isActive.toString()
+    const response = await api.get<Vehicle[]>('/vehicles', { params })
     return response.data
   },
 
@@ -26,4 +29,3 @@ export const vehicleService = {
     await api.delete(`/vehicles/${id}`)
   },
 }
-

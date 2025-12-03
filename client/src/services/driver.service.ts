@@ -2,8 +2,11 @@ import api from '@/lib/api'
 import type { Driver, DriverInput } from '@/types'
 
 export const driverService = {
-  getAll: async (): Promise<Driver[]> => {
-    const response = await api.get<Driver[]>('/drivers')
+  getAll: async (operatorId?: string, isActive?: boolean): Promise<Driver[]> => {
+    const params: Record<string, string> = {}
+    if (operatorId) params.operatorId = operatorId
+    if (isActive !== undefined) params.isActive = isActive.toString()
+    const response = await api.get<Driver[]>('/drivers', { params })
     return response.data
   },
 
@@ -26,4 +29,3 @@ export const driverService = {
     await api.delete(`/drivers/${id}`)
   },
 }
-

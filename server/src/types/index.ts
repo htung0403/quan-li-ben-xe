@@ -2,16 +2,19 @@
 export interface User {
   id: string
   username: string
+  passwordHash: string
   fullName: string
-  role: 'admin' | 'dispatcher' | 'accountant' | 'reporter'
   email?: string
   phone?: string
+  role: 'admin' | 'dispatcher' | 'accountant' | 'reporter'
+  isActive: boolean
+  createdAt: string
+  updatedAt: string
 }
 
 export interface LoginCredentials {
   username: string
   password: string
-  rememberMe?: boolean
 }
 
 // Operator types
@@ -28,8 +31,8 @@ export interface Operator {
   contractStartDate?: string
   contractEndDate?: string
   isActive: boolean
-  createdAt?: string
-  updatedAt?: string
+  createdAt: string
+  updatedAt: string
 }
 
 export interface OperatorInput {
@@ -50,7 +53,7 @@ export interface VehicleType {
   id: string
   name: string
   description?: string
-  createdAt?: string
+  createdAt: string
 }
 
 export interface VehicleTypeInput {
@@ -74,8 +77,8 @@ export interface Vehicle {
   isActive: boolean
   notes?: string
   documents?: VehicleDocuments
-  createdAt?: string
-  updatedAt?: string
+  createdAt: string
+  updatedAt: string
 }
 
 export interface VehicleDocuments {
@@ -128,8 +131,8 @@ export interface Driver {
   imageUrl?: string
   isActive: boolean
   notes?: string
-  createdAt?: string
-  updatedAt?: string
+  createdAt: string
+  updatedAt: string
 }
 
 export interface DriverInput {
@@ -160,7 +163,7 @@ export interface Location {
   latitude?: number
   longitude?: number
   isActive: boolean
-  createdAt?: string
+  createdAt: string
 }
 
 export interface LocationInput {
@@ -186,8 +189,8 @@ export interface Route {
   estimatedDurationMinutes?: number
   isActive: boolean
   stops?: RouteStop[]
-  createdAt?: string
-  updatedAt?: string
+  createdAt: string
+  updatedAt: string
 }
 
 export interface RouteStop {
@@ -198,7 +201,7 @@ export interface RouteStop {
   stopOrder: number
   distanceFromOriginKm?: number
   estimatedMinutesFromOrigin?: number
-  createdAt?: string
+  createdAt: string
 }
 
 export interface RouteInput {
@@ -225,8 +228,8 @@ export interface Schedule {
   effectiveFrom: string
   effectiveTo?: string
   isActive: boolean
-  createdAt?: string
-  updatedAt?: string
+  createdAt: string
+  updatedAt: string
 }
 
 export interface ScheduleInput {
@@ -257,15 +260,12 @@ export interface DispatchRecord {
   id: string
   vehicleId: string
   vehicle?: Vehicle
-  vehiclePlateNumber: string
   driverId: string
   driver?: Driver
-  driverName: string
   scheduleId?: string
   schedule?: Schedule
   routeId: string
   route?: Route
-  routeName: string
   
   // Entry
   entryTime: string
@@ -305,8 +305,8 @@ export interface DispatchRecord {
   currentStatus: DispatchStatus
   notes?: string
   metadata?: Record<string, any>
-  createdAt?: string
-  updatedAt?: string
+  createdAt: string
+  updatedAt: string
 }
 
 export interface DispatchInput {
@@ -325,7 +325,7 @@ export interface ViolationType {
   name: string
   description?: string
   severity: 'low' | 'medium' | 'high' | 'critical'
-  createdAt?: string
+  createdAt: string
 }
 
 export interface Violation {
@@ -340,8 +340,8 @@ export interface Violation {
   resolutionStatus: 'pending' | 'resolved' | 'dismissed'
   resolutionNotes?: string
   recordedBy?: string
-  createdAt?: string
-  updatedAt?: string
+  createdAt: string
+  updatedAt: string
 }
 
 export interface ViolationInput {
@@ -362,8 +362,8 @@ export interface ServiceType {
   basePrice: number
   unit?: string
   isActive: boolean
-  createdAt?: string
-  updatedAt?: string
+  createdAt: string
+  updatedAt: string
 }
 
 export interface ServiceCharge {
@@ -374,7 +374,7 @@ export interface ServiceCharge {
   quantity: number
   unitPrice: number
   totalAmount: number
-  createdAt?: string
+  createdAt: string
 }
 
 export interface ServiceChargeInput {
@@ -400,8 +400,8 @@ export interface Invoice {
   paymentStatus: 'pending' | 'paid' | 'overdue' | 'cancelled'
   paymentDate?: string
   notes?: string
-  createdAt?: string
-  updatedAt?: string
+  createdAt: string
+  updatedAt: string
 }
 
 export interface InvoiceInput {
@@ -436,10 +436,11 @@ export interface RevenueReport {
 
 export interface InvoiceReport {
   id: string
-  invoiceNumber: string
   dispatchId: string
-  operatorName: string
+  vehiclePlateNumber: string
+  route: string
   amount: number
   issueDate: string
   status: string
 }
+

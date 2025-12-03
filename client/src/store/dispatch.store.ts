@@ -1,13 +1,16 @@
 import { create } from 'zustand'
-import type { DispatchRecord, DispatchStatus } from '@/types'
+import type { DispatchRecord } from '@/types'
+
+// Display status type for UI tabs (different from backend status)
+type DisplayStatus = "in-station" | "permit-issued" | "paid" | "departed"
 
 interface DispatchState {
   records: DispatchRecord[]
   selectedRecord: DispatchRecord | null
-  activeTab: DispatchStatus | 'all'
+  activeTab: DisplayStatus | 'all'
   setRecords: (records: DispatchRecord[]) => void
   setSelectedRecord: (record: DispatchRecord | null) => void
-  setActiveTab: (tab: DispatchStatus | 'all') => void
+  setActiveTab: (tab: DisplayStatus | 'all') => void
   updateRecord: (id: string, updates: Partial<DispatchRecord>) => void
   addRecord: (record: DispatchRecord) => void
 }

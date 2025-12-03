@@ -1,18 +1,21 @@
 import { useState, useEffect } from "react"
-import { Search, FileCheck, CreditCard, LogOut, Plus, Building2, CheckCircle } from "lucide-react"
+import {
+  Search,
+  FileCheck,
+  Plus,
+  Bus,
+  Clock,
+  MapPin,
+  FileText,
+  Calendar,
+  User,
+  Upload,
+  RefreshCw
+} from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table"
-import { StatusBadge } from "@/components/layout/StatusBadge"
+import { Select } from "@/components/ui/select"
 import {
   Dialog,
   DialogContent,
@@ -21,23 +24,23 @@ import {
   DialogClose,
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
-import { Select } from "@/components/ui/select"
 import { useDispatchStore } from "@/store/dispatch.store"
-import type { DispatchRecord, DispatchStatus } from "@/types"
+import { dispatchService } from "@/services/dispatch.service"
+import { vehicleService } from "@/services/vehicle.service"
+import { VehicleEntryDialog } from "@/components/dispatch/VehicleEntryDialog"
+import { PassengerDropDialog } from "@/components/dispatch/PassengerDropDialog"
+import { PermitDialog } from "@/components/dispatch/PermitDialog"
+import type { DispatchRecord, DispatchStatus, Vehicle } from "@/types"
 import { format } from "date-fns"
-import { mockDispatchRecords } from "@/mocks/dispatch.mock"
-import { mockVehicles } from "@/mocks/vehicles.mock"
 
-// Transform vehicles and drivers for select options
-const vehicleOptions = mockVehicles.map((v) => ({
-  id: v.id,
-  plateNumber: v.plateNumber,
-}))
+// Display status type for UI tabs (different from backend status)
+type DisplayStatus = "in-station" | "permit-issued" | "paid" | "departed"
 
 export default function Dispatch() {
-  const { records, setRecords, activeTab, setActiveTab } = useDispatchStore()
+  const { records, setRecords } = useDispatchStore()
   const [searchQuery, setSearchQuery] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [vehicles, setVehicles] = useState<Vehicle[]>([])
   const [selectedRecord, setSelectedRecord] = useState<DispatchRecord | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [dialogType, setDialogType] = useState<
@@ -45,49 +48,89 @@ export default function Dispatch() {
   >("entry")
 
   useEffect(() => {
+    loadVehicles()
     loadRecords()
-  }, [activeTab])
+  }, [])
+
+  const loadVehicles = async () => {
+    try {
+      const data = await vehicleService.getAll()
+      setVehicles(data)
+    } catch (error) {
+      console.error("Failed to load vehicles:", error)
+    }
+  }
 
   const loadRecords = async () => {
     setIsLoading(true)
     try {
-      // Use mock data - replace with actual API call when backend is ready
-      // const data = await dispatchService.getAll(activeTab === 'all' ? undefined : activeTab)
-      // setRecords(data)
-      
-      // Filter by active tab
-      let filtered = mockDispatchRecords
-      if (activeTab !== "all") {
-        filtered = mockDispatchRecords.filter((r) => r.status === activeTab)
-      }
-      setRecords(filtered)
+      const data = await dispatchService.getAll()
+      setRecords(data)
     } catch (error) {
       console.error("Failed to load records:", error)
+      alert("Không thể tải danh sách điều độ. Vui lòng thử lại sau.")
     } finally {
       setIsLoading(false)
     }
   }
 
-  // Calculate statistics
-  const stats = {
-    "in-station": mockDispatchRecords.filter((r) => r.status === "in-station").length,
-    "permit-issued": mockDispatchRecords.filter((r) => r.status === "permit-issued").length,
-    "paid": mockDispatchRecords.filter((r) => r.status === "paid").length,
-    "departed": mockDispatchRecords.filter((r) => r.status === "departed").length,
+  // Helper function to map backend status to frontend display status
+  const getDisplayStatus = (currentStatus: DispatchStatus): DisplayStatus => {
+    const statusMap: Record<DispatchStatus, DisplayStatus> = {
+      'entered': 'in-station',
+      'passengers_dropped': 'in-station',
+      'permit_issued': 'permit-issued',
+      'permit_rejected': 'in-station',
+      'paid': 'paid',
+      'departure_ordered': 'departed',
+      'departed': 'departed',
+    }
+    return statusMap[currentStatus] || 'in-station'
   }
 
-  const filteredRecords = records.filter((record) => {
-    if (activeTab !== "all" && record.status !== activeTab) return false
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase()
-      return (
-        record.vehiclePlateNumber.toLowerCase().includes(query) ||
-        record.route.toLowerCase().includes(query) ||
-        record.driverName.toLowerCase().includes(query)
-      )
-    }
-    return true
-  })
+  // Get records for each column
+  const getRecordsByStatus = (status: DisplayStatus) => {
+    return records.filter((record) => {
+      const displayStatus = getDisplayStatus(record.currentStatus)
+      if (status === 'in-station') {
+        return displayStatus === 'in-station'
+      }
+      if (status === 'permit-issued') {
+        return displayStatus === 'permit-issued'
+      }
+      if (status === 'paid') {
+        return displayStatus === 'paid'
+      }
+      if (status === 'departed') {
+        return displayStatus === 'departed'
+      }
+      return false
+    }).filter((record) => {
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase()
+        return (
+          record.vehiclePlateNumber.toLowerCase().includes(query) ||
+          (record.routeName || '').toLowerCase().includes(query) ||
+          record.driverName.toLowerCase().includes(query)
+        )
+      }
+      return true
+    })
+  }
+
+  // Calculate statistics from actual records
+  const stats = {
+    "in-station": getRecordsByStatus("in-station").length,
+    "permit-issued": getRecordsByStatus("permit-issued").length,
+    "paid": getRecordsByStatus("paid").length,
+    "departed": getRecordsByStatus("departed").length,
+  }
+
+  // Transform vehicles for select options
+  const vehicleOptions = vehicles.map((v) => ({
+    id: v.id,
+    plateNumber: v.plateNumber,
+  }))
 
   const handleAction = (record: DispatchRecord, type: typeof dialogType) => {
     setSelectedRecord(record)
@@ -95,54 +138,175 @@ export default function Dispatch() {
     setDialogOpen(true)
   }
 
-  const getActionButton = (record: DispatchRecord, status: DispatchStatus): JSX.Element | null => {
-    switch (status) {
-      case "in-station":
-        return (
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => handleAction(record, "permit")}
-          >
-            <FileCheck className="mr-2 h-4 w-4" />
-            Cấp phép
-          </Button>
-        )
-      case "permit-issued":
-        return (
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => handleAction(record, "payment")}
-          >
-            <CreditCard className="mr-2 h-4 w-4" />
-            Thanh toán
-          </Button>
-        )
-      case "paid":
-        return (
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => handleAction(record, "depart")}
-          >
-            <LogOut className="mr-2 h-4 w-4" />
-            Xuất bến
-          </Button>
-        )
-      default:
-        return null
+  const getActionButtons = (record: DispatchRecord, status: DisplayStatus) => {
+    const buttons = []
+    
+    if (status === "in-station") {
+      buttons.push(
+        <button
+          key="return"
+          onClick={(e) => {
+            e.stopPropagation()
+            handleAction(record, "return")
+          }}
+          className="p-2 hover:bg-gray-100 rounded transition-colors"
+          title="Xác nhận trả khách"
+        >
+          <User className="h-4 w-4 text-gray-600" />
+        </button>
+      )
+      buttons.push(
+        <button
+          key="permit"
+          onClick={(e) => {
+            e.stopPropagation()
+            handleAction(record, "permit")
+          }}
+          className="p-2 hover:bg-gray-100 rounded transition-colors"
+          title="Cấp phép"
+        >
+          <FileCheck className="h-4 w-4 text-gray-600" />
+        </button>
+      )
+      buttons.push(
+        <button
+          key="upload"
+          onClick={(e) => e.stopPropagation()}
+          className="p-2 hover:bg-gray-100 rounded transition-colors"
+          title="Tải lên"
+        >
+          <Upload className="h-4 w-4 text-gray-600" />
+        </button>
+      )
+    } else if (status === "permit-issued") {
+      buttons.push(
+        <button
+          key="document"
+          onClick={(e) => e.stopPropagation()}
+          className="p-2 hover:bg-gray-100 rounded transition-colors"
+          title="Xem tài liệu"
+        >
+          <FileText className="h-4 w-4 text-gray-600" />
+        </button>
+      )
+      buttons.push(
+        <button
+          key="upload"
+          onClick={(e) => e.stopPropagation()}
+          className="p-2 hover:bg-gray-100 rounded transition-colors"
+          title="Tải lên"
+        >
+          <Upload className="h-4 w-4 text-gray-600" />
+        </button>
+      )
+    } else if (status === "paid" || status === "departed") {
+      buttons.push(
+        <button
+          key="upload"
+          onClick={(e) => e.stopPropagation()}
+          className="p-2 hover:bg-gray-100 rounded transition-colors"
+          title="Tải lên"
+        >
+          <Upload className="h-4 w-4 text-gray-600" />
+        </button>
+      )
     }
+
+    return buttons
+  }
+
+  const renderVehicleCard = (record: DispatchRecord, status: DisplayStatus) => {
+    const getBusIconColor = () => {
+      switch (status) {
+        case "in-station":
+          return "text-gray-600"
+        case "permit-issued":
+          return "text-green-600"
+        case "paid":
+          return "text-orange-600"
+        case "departed":
+          return "text-green-600"
+        default:
+          return "text-gray-600"
+      }
+    }
+
+    return (
+      <Card
+        key={record.id}
+        className="mb-3 hover:shadow-md transition-shadow cursor-pointer"
+        onClick={() => {
+          if (status === "in-station") {
+            handleAction(record, "permit")
+          } else if (status === "permit-issued") {
+            handleAction(record, "payment")
+          } else if (status === "paid") {
+            handleAction(record, "depart")
+          }
+        }}
+      >
+        <CardContent className="p-4">
+          <div className="space-y-3">
+            {/* Header with bus icon and plate number */}
+            <div className="flex items-center gap-2">
+              <Bus className={`h-5 w-5 ${getBusIconColor()}`} />
+              <span className="font-semibold text-gray-900">{record.vehiclePlateNumber}</span>
+            </div>
+
+            {/* Entry time */}
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <Clock className="h-4 w-4" />
+              <span>{format(new Date(record.entryTime), "HH:mm dd/MM/yyyy")}</span>
+            </div>
+
+            {/* Route */}
+            {record.routeName && (
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <MapPin className="h-4 w-4" />
+                <span className="truncate">{record.routeName}</span>
+              </div>
+            )}
+
+            {/* Seat count / Passengers */}
+            {(record.seatCount || record.passengersArrived) && (
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <FileText className="h-4 w-4" />
+                <span>{record.seatCount || record.passengersArrived || '-'}</span>
+              </div>
+            )}
+
+            {/* Departure time */}
+            {record.plannedDepartureTime && (
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <Calendar className="h-4 w-4" />
+                <span>{format(new Date(record.plannedDepartureTime), "HH:mm dd/MM/yyyy")}</span>
+              </div>
+            )}
+
+            {/* Driver name */}
+            {record.driverName && (
+              <div className="flex items-center gap-2 text-sm text-gray-600">
+                <User className="h-4 w-4" />
+                <span className="truncate">{record.driverName}</span>
+              </div>
+            )}
+
+            {/* Action buttons */}
+            <div className="flex items-center justify-end gap-1 pt-2 border-t">
+              {getActionButtons(record, status)}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    )
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Điều độ xe</h1>
-          <p className="text-gray-600 mt-1">
-            Quản lý quy trình xe ra vào bến
-          </p>
+          <h1 className="text-2xl font-bold text-gray-900">Điều độ xe</h1>
         </div>
         <Button onClick={() => {
           setDialogType("entry")
@@ -154,196 +318,165 @@ export default function Dispatch() {
         </Button>
       </div>
 
-      {/* Statistics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card 
-          className={`cursor-pointer hover:shadow-md transition-all ${
-            activeTab === "in-station" ? "bg-blue-50" : "bg-white"
-          }`}
-          onClick={() => setActiveTab("in-station")}
-        >
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Trong bến</p>
-                <p className="text-2xl font-bold text-gray-900 mt-2">{stats["in-station"]}</p>
-              </div>
-              <div className={`h-12 w-12 rounded-full flex items-center justify-center ${
-                activeTab === "in-station" ? "bg-blue-200" : "bg-blue-100"
-              }`}>
-                <Building2 className={`h-6 w-6 ${
-                  activeTab === "in-station" ? "text-blue-700" : "text-blue-600"
-                }`} />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card 
-          className={`cursor-pointer hover:shadow-md transition-all ${
-            activeTab === "permit-issued" ? "bg-green-50" : "bg-white"
-          }`}
-          onClick={() => setActiveTab("permit-issued")}
-        >
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Đã cấp nốt</p>
-                <p className="text-2xl font-bold text-gray-900 mt-2">{stats["permit-issued"]}</p>
-              </div>
-              <div className={`h-12 w-12 rounded-full flex items-center justify-center ${
-                activeTab === "permit-issued" ? "bg-green-200" : "bg-green-100"
-              }`}>
-                <FileCheck className={`h-6 w-6 ${
-                  activeTab === "permit-issued" ? "text-green-700" : "text-green-600"
-                }`} />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card 
-          className={`cursor-pointer hover:shadow-md transition-all ${
-            activeTab === "paid" ? "bg-yellow-50" : "bg-white"
-          }`}
-          onClick={() => setActiveTab("paid")}
-        >
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Đã thanh toán</p>
-                <p className="text-2xl font-bold text-gray-900 mt-2">{stats["paid"]}</p>
-              </div>
-              <div className={`h-12 w-12 rounded-full flex items-center justify-center ${
-                activeTab === "paid" ? "bg-yellow-200" : "bg-yellow-100"
-              }`}>
-                <CreditCard className={`h-6 w-6 ${
-                  activeTab === "paid" ? "text-yellow-700" : "text-yellow-600"
-                }`} />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card 
-          className={`cursor-pointer hover:shadow-md transition-all ${
-            activeTab === "departed" ? "bg-purple-50" : "bg-white"
-          }`}
-          onClick={() => setActiveTab("departed")}
-        >
-          <CardContent className="pt-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Đã xuất bến</p>
-                <p className="text-2xl font-bold text-gray-900 mt-2">{stats["departed"]}</p>
-              </div>
-              <div className={`h-12 w-12 rounded-full flex items-center justify-center ${
-                activeTab === "departed" ? "bg-purple-200" : "bg-purple-100"
-              }`}>
-                <CheckCircle className={`h-6 w-6 ${
-                  activeTab === "departed" ? "text-purple-700" : "text-purple-600"
-                }`} />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Search and Filters */}
+      <div className="flex items-center gap-4">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          <Input
+            placeholder="Tìm kiếm"
+            className="pl-10"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
+        <Select className="w-48">
+          <option value="">Loại cấp nốt</option>
+        </Select>
+        <Button variant="outline" size="icon" onClick={loadRecords}>
+          <RefreshCw className="h-4 w-4" />
+        </Button>
+        <Button variant="outline" size="icon">
+          <Upload className="h-4 w-4" />
+        </Button>
       </div>
 
-      {/* Search */}
-      <Card>
-        <CardContent className="pt-6">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-            <Input
-              placeholder="Tìm kiếm theo biển số, tuyến đường, lái xe..."
-              className="pl-10"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
+      {/* Kanban Board */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+        {/* Column 1: Trong bến */}
+        <div className="bg-gray-50 rounded-lg p-4 min-h-[600px]">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-semibold text-gray-900">
+              Danh sách xe trong bến ({stats["in-station"]})
+            </h2>
+            <Button variant="ghost" size="icon" onClick={loadRecords}>
+              <RefreshCw className="h-4 w-4" />
+            </Button>
           </div>
-        </CardContent>
-      </Card>
+          <div className="space-y-2 max-h-[calc(100vh-300px)] overflow-y-auto">
+            {isLoading ? (
+              <div className="text-center py-8 text-gray-500">Đang tải...</div>
+            ) : getRecordsByStatus("in-station").length === 0 ? (
+              <div className="text-center py-8 text-gray-500">Không có dữ liệu</div>
+            ) : (
+              getRecordsByStatus("in-station").map((record) =>
+                renderVehicleCard(record, "in-station")
+              )
+            )}
+          </div>
+        </div>
 
-      {/* Tabs */}
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as DispatchStatus | "all")}>
-        <TabsList>
-          <TabsTrigger value="all">Tất cả</TabsTrigger>
-          <TabsTrigger value="in-station">Trong bến</TabsTrigger>
-          <TabsTrigger value="permit-issued">Đã cấp nốt</TabsTrigger>
-          <TabsTrigger value="paid">Đã thanh toán</TabsTrigger>
-          <TabsTrigger value="departed">Đã xuất bến</TabsTrigger>
-        </TabsList>
+        {/* Column 2: Đã cấp nốt */}
+        <div className="bg-gray-50 rounded-lg p-4 min-h-[600px]">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-semibold text-gray-900">
+              Danh sách xe đã cấp nốt ({stats["permit-issued"]})
+            </h2>
+            <Button variant="ghost" size="icon" onClick={loadRecords}>
+              <RefreshCw className="h-4 w-4" />
+            </Button>
+          </div>
+          <div className="space-y-2 max-h-[calc(100vh-300px)] overflow-y-auto">
+            {isLoading ? (
+              <div className="text-center py-8 text-gray-500">Đang tải...</div>
+            ) : getRecordsByStatus("permit-issued").length === 0 ? (
+              <div className="text-center py-8 text-gray-500">Không có dữ liệu</div>
+            ) : (
+              getRecordsByStatus("permit-issued").map((record) =>
+                renderVehicleCard(record, "permit-issued")
+              )
+            )}
+          </div>
+        </div>
 
-        <TabsContent value={activeTab} className="mt-4">
-          <Card>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Biển số</TableHead>
-                  <TableHead>Tuyến đường</TableHead>
-                  <TableHead>Lái xe</TableHead>
-                  <TableHead>Giờ vào</TableHead>
-                  <TableHead>Trạng thái</TableHead>
-                  <TableHead>Thao tác</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {isLoading ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8">
-                      Đang tải...
-                    </TableCell>
-                  </TableRow>
-                ) : filteredRecords.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={6} className="text-center py-8 text-gray-500">
-                      Không có dữ liệu
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredRecords.map((record) => (
-                    <TableRow key={record.id}>
-                      <TableCell className="font-medium">
-                        {record.vehiclePlateNumber}
-                      </TableCell>
-                      <TableCell>{record.route}</TableCell>
-                      <TableCell>{record.driverName}</TableCell>
-                      <TableCell>
-                        {format(new Date(record.entryTime), "HH:mm dd/MM/yyyy")}
-                      </TableCell>
-                      <TableCell>
-                        <StatusBadge status={record.status} />
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          {getActionButton(record, record.status)}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </Card>
-        </TabsContent>
-      </Tabs>
+        {/* Column 3: Đã thanh toán */}
+        <div className="bg-gray-50 rounded-lg p-4 min-h-[600px]">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-semibold text-gray-900">
+              Danh sách xe đã thanh toán ({stats["paid"]})
+            </h2>
+            <Button variant="ghost" size="icon" onClick={loadRecords}>
+              <RefreshCw className="h-4 w-4" />
+            </Button>
+          </div>
+          <div className="space-y-2 max-h-[calc(100vh-300px)] overflow-y-auto">
+            {isLoading ? (
+              <div className="text-center py-8 text-gray-500">Đang tải...</div>
+            ) : getRecordsByStatus("paid").length === 0 ? (
+              <div className="text-center py-8 text-gray-500">Không có dữ liệu</div>
+            ) : (
+              getRecordsByStatus("paid").map((record) =>
+                renderVehicleCard(record, "paid")
+              )
+            )}
+          </div>
+        </div>
+
+        {/* Column 4: Đã cấp lệnh xuất bến */}
+        <div className="bg-gray-50 rounded-lg p-4 min-h-[600px]">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-semibold text-gray-900">
+              Danh sách xe đã cấp lệnh xuất bến ({stats["departed"]})
+            </h2>
+            <Button variant="ghost" size="icon" onClick={loadRecords}>
+              <RefreshCw className="h-4 w-4" />
+            </Button>
+          </div>
+          <div className="space-y-2 max-h-[calc(100vh-300px)] overflow-y-auto">
+            {isLoading ? (
+              <div className="text-center py-8 text-gray-500">Đang tải...</div>
+            ) : getRecordsByStatus("departed").length === 0 ? (
+              <div className="text-center py-8 text-gray-500">Không có dữ liệu</div>
+            ) : (
+              getRecordsByStatus("departed").map((record) =>
+                renderVehicleCard(record, "departed")
+              )
+            )}
+          </div>
+        </div>
+      </div>
 
       {/* Dialogs */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className={`max-h-[90vh] overflow-y-auto ${
+          dialogType === "permit" ? "max-w-6xl" : "max-w-3xl"
+        }`}>
           <DialogClose onClose={() => setDialogOpen(false)} />
           <DialogHeader>
             <DialogTitle>
               {dialogType === "entry" && "Cho xe vào bến"}
+              {dialogType === "return" && "Xác nhận trả khách"}
               {dialogType === "permit" && "Cấp phép lên nốt"}
               {dialogType === "payment" && "Thanh toán"}
               {dialogType === "depart" && "Xuất bến"}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            {dialogType === "entry" && <EntryForm onClose={() => setDialogOpen(false)} />}
+            {dialogType === "entry" && (
+              <VehicleEntryDialog
+                vehicleOptions={vehicleOptions}
+                onClose={() => setDialogOpen(false)}
+                onSuccess={() => {
+                  loadRecords()
+                }}
+              />
+            )}
+            {dialogType === "return" && selectedRecord && (
+              <PassengerDropDialog
+                record={selectedRecord}
+                onClose={() => setDialogOpen(false)}
+                onSuccess={() => {
+                  loadRecords()
+                }}
+              />
+            )}
             {dialogType === "permit" && selectedRecord && (
-              <PermitForm record={selectedRecord} onClose={() => setDialogOpen(false)} />
+              <PermitDialog
+                record={selectedRecord}
+                onClose={() => setDialogOpen(false)}
+                onSuccess={() => {
+                  loadRecords()
+                }}
+              />
             )}
             {dialogType === "payment" && selectedRecord && (
               <PaymentForm record={selectedRecord} onClose={() => setDialogOpen(false)} />
@@ -359,140 +492,6 @@ export default function Dispatch() {
 }
 
 // Form components
-function EntryForm({ onClose }: { onClose: () => void }) {
-  const [vehicleId, setVehicleId] = useState("")
-  const [entryTime, setEntryTime] = useState(new Date().toISOString().slice(0, 16))
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    // Handle submit
-    onClose()
-  }
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="space-y-4">
-        <div>
-          <Label htmlFor="vehicle">Biển số xe *</Label>
-          <Select 
-            id="vehicle" 
-            value={vehicleId} 
-            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setVehicleId(e.target.value)}
-            className="mt-1"
-          >
-            <option value="">Chọn xe</option>
-            {vehicleOptions.map((v) => (
-              <option key={v.id} value={v.id}>
-                {v.plateNumber}
-              </option>
-            ))}
-          </Select>
-        </div>
-        <div>
-          <Label htmlFor="entryTime">Giờ vào *</Label>
-          <Input
-            id="entryTime"
-            type="datetime-local"
-            value={entryTime}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEntryTime(e.target.value)}
-            className="mt-1"
-            required
-          />
-        </div>
-      </div>
-      <div className="flex justify-end gap-2 pt-4 border-t">
-        <Button type="button" variant="outline" onClick={onClose}>
-          Hủy
-        </Button>
-        <Button type="submit">Xác nhận</Button>
-      </div>
-    </form>
-  )
-}
-
-function PermitForm({ record, onClose }: { record: DispatchRecord; onClose: () => void }) {
-  const [permitNumber, setPermitNumber] = useState("")
-  const [departureTime, setDepartureTime] = useState("")
-  const [seatCount, setSeatCount] = useState("")
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    // Handle submit
-    onClose()
-  }
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="space-y-4">
-        <div className="rounded-lg bg-blue-50 p-4 border border-blue-200">
-          <Label className="text-sm font-medium text-gray-600">Biển số xe</Label>
-          <p className="text-lg font-semibold text-gray-900 mt-1">{record.vehiclePlateNumber}</p>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <Label htmlFor="permitNumber">Mã vận lệnh *</Label>
-            <Input
-              id="permitNumber"
-              value={permitNumber}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPermitNumber(e.target.value)}
-              required
-              className="mt-1"
-            />
-          </div>
-          <div>
-            <Label htmlFor="seatCount">Số ghế *</Label>
-            <Input
-              id="seatCount"
-              type="number"
-              value={seatCount}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setSeatCount(e.target.value)}
-              required
-              className="mt-1"
-            />
-          </div>
-        </div>
-        
-        <div>
-          <Label htmlFor="departureTime">Giờ xuất phát *</Label>
-          <Input
-            id="departureTime"
-            type="datetime-local"
-            value={departureTime}
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDepartureTime(e.target.value)}
-            required
-            className="mt-1"
-          />
-        </div>
-        
-        <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-          <p className="text-sm font-medium mb-3 text-gray-900">Trạng thái giấy tờ:</p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
-            <div className="flex items-center justify-between p-2 bg-white rounded">
-              <span className="text-gray-700">Đăng kiểm</span>
-              <span className="text-success font-medium">✓ Hợp lệ</span>
-            </div>
-            <div className="flex items-center justify-between p-2 bg-white rounded">
-              <span className="text-gray-700">Bảo hiểm</span>
-              <span className="text-success font-medium">✓ Hợp lệ</span>
-            </div>
-            <div className="flex items-center justify-between p-2 bg-white rounded">
-              <span className="text-gray-700">Bằng lái</span>
-              <span className="text-success font-medium">✓ Hợp lệ</span>
-            </div>
-          </div>
-        </div>
-      </div>
-      <div className="flex justify-end gap-2 pt-4 border-t">
-        <Button type="button" variant="outline" onClick={onClose}>
-          Hủy
-        </Button>
-        <Button type="submit">Cấp phép</Button>
-      </div>
-    </form>
-  )
-}
-
 function PaymentForm({ record, onClose }: { record: DispatchRecord; onClose: () => void }) {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
