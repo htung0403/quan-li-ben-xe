@@ -137,12 +137,12 @@ export const getAllVehicles = async (req: Request, res: Response) => {
       }
     })
 
-    res.json(vehiclesWithDocs)
+    return res.json(vehiclesWithDocs)
   } catch (error: any) {
     if (error.name === 'ZodError') {
       return res.status(400).json({ error: error.errors[0].message })
     }
-    res.status(500).json({ error: error.message || 'Failed to fetch vehicles' })
+    return res.status(500).json({ error: error.message || 'Failed to fetch vehicles' })
   }
 }
 
@@ -219,7 +219,7 @@ export const getVehicleById = async (req: Request, res: Response) => {
     if (error.name === 'ZodError') {
       return res.status(400).json({ error: error.errors[0].message })
     }
-    res.status(500).json({ error: error.message || 'Failed to fetch vehicle' })
+    return res.status(500).json({ error: error.message || 'Failed to fetch vehicle' })
   }
 }
 
@@ -335,7 +335,7 @@ export const createVehicle = async (req: Request, res: Response) => {
     if (error.name === 'ZodError') {
       return res.status(400).json({ error: error.errors[0].message })
     }
-    res.status(500).json({ error: error.message || 'Failed to create vehicle' })
+    return res.status(500).json({ error: error.message || 'Failed to create vehicle' })
   }
 }
 
@@ -483,7 +483,7 @@ export const updateVehicle = async (req: Request, res: Response) => {
     if (error.name === 'ZodError') {
       return res.status(400).json({ error: error.errors[0].message })
     }
-    res.status(500).json({ error: error.message || 'Failed to update vehicle' })
+    return res.status(500).json({ error: error.message || 'Failed to update vehicle' })
   }
 }
 

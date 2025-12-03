@@ -1,6 +1,6 @@
 import { Request, Response } from 'express'
 import bcrypt from 'bcryptjs'
-import jwt from 'jsonwebtoken'
+import jwt, { SignOptions } from 'jsonwebtoken'
 import { supabase } from '../config/database.js'
 import { loginSchema } from '../utils/validation.js'
 
@@ -38,7 +38,9 @@ export const login = async (req: Request, res: Response) => {
         role: user.role,
       },
       jwtSecret,
-      { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+      {
+        expiresIn: process.env.JWT_EXPIRES_IN || '7d'
+      } as SignOptions
     )
 
     return res.json({

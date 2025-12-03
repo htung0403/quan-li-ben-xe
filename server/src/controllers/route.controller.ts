@@ -249,7 +249,7 @@ export const createRoute = async (req: Request, res: Response) => {
     if (error.name === 'ZodError') {
       return res.status(400).json({ error: error.errors[0].message })
     }
-    res.status(500).json({ error: error.message || 'Failed to create route' })
+    return res.status(500).json({ error: error.message || 'Failed to create route' })
   }
 }
 
@@ -353,7 +353,7 @@ export const updateRoute = async (req: Request, res: Response) => {
     if (error.name === 'ZodError') {
       return res.status(400).json({ error: error.errors[0].message })
     }
-    res.status(500).json({ error: error.message || 'Failed to update route' })
+    return res.status(500).json({ error: error.message || 'Failed to update route' })
   }
 }
 

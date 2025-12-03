@@ -23,9 +23,9 @@ export const getAllVehicleTypes = async (_req: Request, res: Response) => {
       createdAt: vt.created_at,
     }))
 
-    res.json(vehicleTypes)
+    return res.json(vehicleTypes)
   } catch (error: any) {
-    res.status(500).json({ error: error.message || 'Failed to fetch vehicle types' })
+    return res.status(500).json({ error: error.message || 'Failed to fetch vehicle types' })
   }
 }
 
@@ -51,7 +51,7 @@ export const getVehicleTypeById = async (req: Request, res: Response) => {
       createdAt: data.created_at,
     })
   } catch (error: any) {
-    res.status(500).json({ error: error.message || 'Failed to fetch vehicle type' })
+    return res.status(500).json({ error: error.message || 'Failed to fetch vehicle type' })
   }
 }
 
@@ -80,7 +80,7 @@ export const createVehicleType = async (req: Request, res: Response) => {
     if (error.name === 'ZodError') {
       return res.status(400).json({ error: error.errors[0].message })
     }
-    res.status(500).json({ error: error.message || 'Failed to create vehicle type' })
+    return res.status(500).json({ error: error.message || 'Failed to create vehicle type' })
   }
 }
 
@@ -115,7 +115,7 @@ export const updateVehicleType = async (req: Request, res: Response) => {
     if (error.name === 'ZodError') {
       return res.status(400).json({ error: error.errors[0].message })
     }
-    res.status(500).json({ error: error.message || 'Failed to update vehicle type' })
+    return res.status(500).json({ error: error.message || 'Failed to update vehicle type' })
   }
 }
 

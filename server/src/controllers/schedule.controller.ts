@@ -65,12 +65,12 @@ export const getAllSchedules = async (req: Request, res: Response) => {
       updatedAt: schedule.updated_at,
     }))
 
-    res.json(schedules)
+    return res.json(schedules)
   } catch (error: any) {
     if (error.name === 'ZodError') {
       return res.status(400).json({ error: error.errors[0].message })
     }
-    res.status(500).json({ error: error.message || 'Failed to fetch schedules' })
+    return res.status(500).json({ error: error.message || 'Failed to fetch schedules' })
   }
 }
 
@@ -121,7 +121,7 @@ export const getScheduleById = async (req: Request, res: Response) => {
     if (error.name === 'ZodError') {
       return res.status(400).json({ error: error.errors[0].message })
     }
-    res.status(500).json({ error: error.message || 'Failed to fetch schedule' })
+    return res.status(500).json({ error: error.message || 'Failed to fetch schedule' })
   }
 }
 
@@ -182,7 +182,7 @@ export const createSchedule = async (req: Request, res: Response) => {
     if (error.name === 'ZodError') {
       return res.status(400).json({ error: error.errors[0].message })
     }
-    res.status(500).json({ error: error.message || 'Failed to create schedule' })
+    return res.status(500).json({ error: error.message || 'Failed to create schedule' })
   }
 }
 
@@ -245,7 +245,7 @@ export const updateSchedule = async (req: Request, res: Response) => {
     if (error.name === 'ZodError') {
       return res.status(400).json({ error: error.errors[0].message })
     }
-    res.status(500).json({ error: error.message || 'Failed to update schedule' })
+    return res.status(500).json({ error: error.message || 'Failed to update schedule' })
   }
 }
 

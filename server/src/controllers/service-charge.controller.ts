@@ -47,9 +47,9 @@ export const getAllServiceCharges = async (req: Request, res: Response) => {
       createdAt: charge.created_at,
     }))
 
-    res.json(serviceCharges)
+    return res.json(serviceCharges)
   } catch (error: any) {
-    res.status(500).json({ error: error.message || 'Failed to fetch service charges' })
+    return res.status(500).json({ error: error.message || 'Failed to fetch service charges' })
   }
 }
 
@@ -88,7 +88,7 @@ export const getServiceChargeById = async (req: Request, res: Response) => {
       createdAt: data.created_at,
     })
   } catch (error: any) {
-    res.status(500).json({ error: error.message || 'Failed to fetch service charge' })
+    return res.status(500).json({ error: error.message || 'Failed to fetch service charge' })
   }
 }
 
@@ -133,7 +133,7 @@ export const createServiceCharge = async (req: Request, res: Response) => {
     if (error.name === 'ZodError') {
       return res.status(400).json({ error: error.errors[0].message })
     }
-    res.status(500).json({ error: error.message || 'Failed to create service charge' })
+    return res.status(500).json({ error: error.message || 'Failed to create service charge' })
   }
 }
 

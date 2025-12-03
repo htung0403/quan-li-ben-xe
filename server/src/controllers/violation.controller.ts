@@ -62,9 +62,9 @@ export const getAllViolations = async (req: Request, res: Response) => {
       updatedAt: violation.updated_at,
     }))
 
-    res.json(violations)
+    return res.json(violations)
   } catch (error: any) {
-    res.status(500).json({ error: error.message || 'Failed to fetch violations' })
+    return res.status(500).json({ error: error.message || 'Failed to fetch violations' })
   }
 }
 
@@ -107,7 +107,7 @@ export const getViolationById = async (req: Request, res: Response) => {
       updatedAt: data.updated_at,
     })
   } catch (error: any) {
-    res.status(500).json({ error: error.message || 'Failed to fetch violation' })
+    return res.status(500).json({ error: error.message || 'Failed to fetch violation' })
   }
 }
 
@@ -160,7 +160,7 @@ export const createViolation = async (req: AuthRequest, res: Response) => {
     if (error.name === 'ZodError') {
       return res.status(400).json({ error: error.errors[0].message })
     }
-    res.status(500).json({ error: error.message || 'Failed to create violation' })
+    return res.status(500).json({ error: error.message || 'Failed to create violation' })
   }
 }
 
@@ -212,7 +212,7 @@ export const updateViolation = async (req: Request, res: Response) => {
       updatedAt: data.updated_at,
     })
   } catch (error: any) {
-    res.status(500).json({ error: error.message || 'Failed to update violation' })
+    return res.status(500).json({ error: error.message || 'Failed to update violation' })
   }
 }
 
