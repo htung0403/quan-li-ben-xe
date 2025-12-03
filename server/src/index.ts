@@ -30,10 +30,12 @@ const getCorsOrigins = (): string | string[] => {
   
   // Support multiple origins separated by comma
   if (corsOrigin.includes(',')) {
-    return corsOrigin.split(',').map(origin => origin.trim())
+    // Normalize each origin (remove trailing slash)
+    return corsOrigin.split(',').map(origin => origin.trim().replace(/\/$/, ''))
   }
   
-  return corsOrigin.trim()
+  // Normalize single origin (remove trailing slash)
+  return corsOrigin.trim().replace(/\/$/, '')
 }
 
 // Middleware
@@ -41,9 +43,6 @@ app.use(cors({
   origin: (origin, callback) => {
     const allowedOrigins = getCorsOrigins()
     const originsArray = Array.isArray(allowedOrigins) ? allowedOrigins : [allowedOrigins]
-    
-    // Normalize origins (remove trailing slash)
-    const normalizedOrigins = originsArray.map(o => o.replace(/\/$/, ''))
     
     // Normalize request origin (remove trailing slash)
     const normalizedOrigin = origin ? origin.replace(/\/$/, '') : null
@@ -54,9 +53,9 @@ app.use(cors({
     }
     
     // Check if origin is allowed
-    if (normalizedOrigins.includes(normalizedOrigin)) {
-      // Return the normalized origin (without trailing slash)
-      callback(null, normalizedOrigin)
+    if (originsArray.includes(normalizedOrigin)) {
+      // Return true to allow the origin
+      callback(null, true)
     } else {
       callback(new Error('Not allowed by CORS'))
     }
