@@ -75,16 +75,16 @@ export const dispatchService = {
     data?: Partial<DispatchRecord>
   ): Promise<DispatchRecord> => {
     // Map old status to new workflow
-    if (status === 'permit-issued') {
+    if (status === 'permit_issued') {
       return dispatchService.issuePermit(id, {
-        transportOrderCode: data?.permitNumber || '',
-        plannedDepartureTime: data?.departureTime || new Date().toISOString(),
-        seatCount: data?.passengerCount || 0,
+        transportOrderCode: data?.transportOrderCode || '',
+        plannedDepartureTime: data?.plannedDepartureTime || new Date().toISOString(),
+        seatCount: data?.seatCount || 0,
       })
     }
     if (status === 'paid') {
       return dispatchService.processPayment(id, {
-        paymentAmount: data?.totalAmount || 0,
+        paymentAmount: data?.paymentAmount || 0,
       })
     }
     if (status === 'departed') {
@@ -93,7 +93,7 @@ export const dispatchService = {
     throw new Error('Legacy updateStatus is deprecated. Use specific workflow methods.')
   },
 
-  depart: async (id: string, exitTime: string, passengerCount: number): Promise<DispatchRecord> => {
+  depart: async (id: string, _exitTime: string, passengerCount: number): Promise<DispatchRecord> => {
     // Use new workflow
     await dispatchService.issueDepartureOrder(id, passengerCount)
     return dispatchService.recordExit(id)

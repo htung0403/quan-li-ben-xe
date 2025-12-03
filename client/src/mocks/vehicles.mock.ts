@@ -4,11 +4,10 @@ export const mockVehicles: Vehicle[] = [
   {
     id: "v1",
     plateNumber: "29A-12345",
-    vehicleType: "Xe khách",
+    vehicleTypeId: "vt1",
     seatCapacity: 45,
     operatorId: "op1",
-    operatorName: "Nhà xe Phương Trang",
-    status: "active",
+    isActive: true,
     documents: {
       registration: {
         number: "DK-2024-001",
@@ -22,7 +21,7 @@ export const mockVehicles: Vehicle[] = [
         expiryDate: "2025-02-01",
         isValid: true,
       },
-      permit: {
+      operation_permit: {
         number: "PH-2024-001",
         issueDate: "2024-01-10",
         expiryDate: "2024-12-31",
@@ -41,11 +40,10 @@ export const mockVehicles: Vehicle[] = [
   {
     id: "v2",
     plateNumber: "29B-67890",
-    vehicleType: "Xe khách",
+    vehicleTypeId: "vt1",
     seatCapacity: 40,
     operatorId: "op2",
-    operatorName: "Nhà xe Hoàng Long",
-    status: "active",
+    isActive: true,
     documents: {
       registration: {
         number: "DK-2024-003",
@@ -59,7 +57,7 @@ export const mockVehicles: Vehicle[] = [
         expiryDate: "2025-02-15",
         isValid: true,
       },
-      permit: {
+      operation_permit: {
         number: "PH-2024-002",
         issueDate: "2024-01-15",
         expiryDate: "2024-12-31",
@@ -78,11 +76,10 @@ export const mockVehicles: Vehicle[] = [
   {
     id: "v3",
     plateNumber: "29A-11111",
-    vehicleType: "Xe khách",
+    vehicleTypeId: "vt1",
     seatCapacity: 35,
     operatorId: "op1",
-    operatorName: "Nhà xe Phương Trang",
-    status: "active",
+    isActive: true,
     documents: {
       registration: {
         number: "DK-2023-100",
@@ -96,7 +93,7 @@ export const mockVehicles: Vehicle[] = [
         expiryDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
         isValid: true,
       },
-      permit: {
+      operation_permit: {
         number: "PH-2024-003",
         issueDate: "2024-01-20",
         expiryDate: "2024-12-31",
@@ -115,11 +112,10 @@ export const mockVehicles: Vehicle[] = [
   {
     id: "v4",
     plateNumber: "29C-22222",
-    vehicleType: "Xe tải",
+    vehicleTypeId: "vt2",
     seatCapacity: 3,
     operatorId: "op3",
-    operatorName: "Nhà xe Thành Công",
-    status: "active",
+    isActive: true,
     documents: {
       registration: {
         number: "DK-2024-006",
@@ -133,7 +129,7 @@ export const mockVehicles: Vehicle[] = [
         expiryDate: "2025-02-10",
         isValid: true,
       },
-      permit: {
+      operation_permit: {
         number: "PH-2024-004",
         issueDate: "2024-02-01",
         expiryDate: "2024-12-31",
@@ -152,11 +148,10 @@ export const mockVehicles: Vehicle[] = [
   {
     id: "v5",
     plateNumber: "29A-33333",
-    vehicleType: "Xe khách",
+    vehicleTypeId: "vt1",
     seatCapacity: 50,
     operatorId: "op1",
-    operatorName: "Nhà xe Phương Trang",
-    status: "maintenance",
+    isActive: false,
     documents: {
       registration: {
         number: "DK-2023-200",
@@ -170,7 +165,7 @@ export const mockVehicles: Vehicle[] = [
         expiryDate: "2025-01-15",
         isValid: true,
       },
-      permit: {
+      operation_permit: {
         number: "PH-2024-005",
         issueDate: "2024-01-25",
         expiryDate: "2024-12-31",

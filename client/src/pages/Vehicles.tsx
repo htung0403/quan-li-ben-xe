@@ -413,7 +413,12 @@ function VehicleForm({
     formState: { errors },
   } = useForm<VehicleFormData>({
     resolver: zodResolver(vehicleSchema),
-    defaultValues: vehicle || undefined,
+    defaultValues: vehicle ? {
+      plateNumber: vehicle.plateNumber,
+      vehicleType: vehicle.vehicleType?.name || vehicle.vehicleTypeId || "",
+      seatCapacity: vehicle.seatCapacity,
+      operatorId: vehicle.operatorId,
+    } : undefined,
   })
 
   const onSubmit = async (data: VehicleFormData) => {

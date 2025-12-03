@@ -34,7 +34,7 @@ export function PassengerDropDialog({
   const [routes, setRoutes] = useState<Route[]>([])
   const [schedules, setSchedules] = useState<Schedule[]>([])
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null)
-  const [transportOrderDisplay, setTransportOrderDisplay] = useState<string | null>(null)
+  const [transportOrderDisplay] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [scheduleSearchQuery, setScheduleSearchQuery] = useState("")
 

@@ -10,7 +10,7 @@ import { routeService } from "@/services/route.service"
 import { scheduleService } from "@/services/schedule.service"
 import { dispatchService } from "@/services/dispatch.service"
 import { driverService } from "@/services/driver.service"
-import type { Vehicle, Route, Schedule, Driver, DispatchInput } from "@/types"
+import type { Route, Schedule, Driver, DispatchInput } from "@/types"
 import { format } from "date-fns"
 
 interface VehicleEntryDialogProps {
@@ -37,9 +37,8 @@ export function VehicleEntryDialog({
   
   const [routes, setRoutes] = useState<Route[]>([])
   const [schedules, setSchedules] = useState<Schedule[]>([])
-  const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null)
   const [selectedDriver, setSelectedDriver] = useState<Driver | null>(null)
-  const [transportOrderDisplay, setTransportOrderDisplay] = useState<string | null>(null)
+  const [transportOrderDisplay] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
@@ -50,7 +49,6 @@ export function VehicleEntryDialog({
     if (vehicleId) {
       loadVehicleDetails(vehicleId)
     } else {
-      setSelectedVehicle(null)
       setSelectedDriver(null)
     }
   }, [vehicleId])
@@ -75,7 +73,6 @@ export function VehicleEntryDialog({
   const loadVehicleDetails = async (id: string) => {
     try {
       const vehicle = await vehicleService.getById(id)
-      setSelectedVehicle(vehicle)
       
       // Try to get driver for this vehicle's operator
       if (vehicle.operatorId) {

@@ -133,10 +133,6 @@ export function NotEligibleReasonDialog({
 
   const allReasonsList = Object.values(groupedReasons).flatMap(group => group.reasons)
   const totalPages = Math.ceil(allReasonsList.length / itemsPerPage)
-  const paginatedReasons = allReasonsList.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  )
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
