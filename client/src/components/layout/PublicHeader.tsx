@@ -1,8 +1,9 @@
 import { useState } from "react"
-import { Link, useLocation, useNavigate } from "react-router-dom"
-import { Menu, X, ChevronDown, User, LogOut, LayoutDashboard } from "lucide-react"
+import { Link, useLocation } from "react-router-dom"
+import { Menu, X, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAuthStore } from "@/store/auth.store"
+import { UserDropdown } from "./UserDropdown"
 import logo from "@/assets/logo.png"
 
 interface NavItem {
@@ -14,7 +15,7 @@ interface NavItem {
     title: string
     path: string
     items: { label: string; path: string }[]
-    underlineColor: "gray" | "teal"
+    underlineColor: "gray" | "teal" | "purple" | "amber"
   }[]
 }
 
@@ -71,30 +72,71 @@ const navItems: NavItem[] = [
       },
     ],
   },
-  { label: "Bảng giá", path: "/pricing" },
-  { label: "Hướng dẫn sử dụng", path: "/guide" },
+  {
+    label: "Bảng giá",
+    path: "/pricing",
+    hasDropdown: true,
+    dropdownItems: [
+      { label: "Bảng giá vé xe khách điện tử", path: "/pricing/electronic-ticket" },
+      { label: "Bảng giá lệnh vận chuyển điện tử", path: "/pricing/dispatch-order" },
+      { label: "Bảng giá chữ ký số ICORP", path: "/pricing/icorp-signature" },
+      { label: "Bảng giá HĐĐT - ICORP", path: "/pricing/icorp-invoice" },
+    ],
+  },
+  {
+    label: "Hướng dẫn sử dụng",
+    path: "/guide",
+    hasDropdown: true,
+    dropdownCategories: [
+      {
+        title: "DÀNH CHO BẾN XE KHÁCH",
+        path: "/guide/bus-station",
+        underlineColor: "teal",
+        items: [
+          { label: "Bán vé ủy thác", path: "/guide/bus-station/consignment" },
+          { label: "Điều độ", path: "/guide/bus-station/dispatch" },
+          { label: "Thanh toán", path: "/guide/bus-station/payment" },
+          { label: "Báo cáo - thống kê", path: "/guide/bus-station/reports" },
+        ],
+      },
+      {
+        title: "DÀNH CHO DOANH NGHIỆP VẬN TẢI",
+        path: "/guide/transport",
+        underlineColor: "purple",
+        items: [
+          { label: "Lệnh điện tử", path: "/guide/transport/electronic-order" },
+          { label: "Bán vé điện tử", path: "/guide/transport/electronic-ticket" },
+          { label: "Khởi tạo thông tin", path: "/guide/transport/init-data" },
+          { label: "Thiết lập kế hoạch hoạt động", path: "/guide/transport/activity-plan" },
+          { label: "Báo cáo - thống kê", path: "/guide/transport/reports" },
+        ],
+      },
+      {
+        title: "DÀNH CHO LÁI XE",
+        path: "/guide/driver",
+        underlineColor: "amber",
+        items: [
+          { label: "Lệnh vận chuyển điện tử", path: "/guide/driver/dispatch-order" },
+          { label: "Bán vé điện tử trên xe", path: "/guide/driver/onboard-ticket" },
+          { label: "Cài đặt app SLaiXe", path: "/guide/driver/slaixe-app" },
+        ],
+      },
+    ],
+  },
   { label: "Trợ giúp", path: "/help" },
 ]
 
 export function PublicHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [openDropdown, setOpenDropdown] = useState<string | null>(null)
-  const [userMenuOpen, setUserMenuOpen] = useState(false)
   const location = useLocation()
-  const navigate = useNavigate()
-  const { isAuthenticated, user, logout } = useAuthStore()
+  const { isAuthenticated } = useAuthStore()
 
   const isActive = (path: string) => {
     if (path === "/") {
       return location.pathname === "/"
     }
     return location.pathname.startsWith(path)
-  }
-
-  const handleLogout = () => {
-    logout()
-    setUserMenuOpen(false)
-    navigate("/")
   }
 
   const handleDropdownToggle = (label: string) => {
@@ -104,7 +146,7 @@ export function PublicHeader() {
   return (
     <header className="sticky top-0 z-50 w-full border-b border-gray-200 bg-white shadow-sm">
       <div className="container mx-auto px-4">
-        <div className="flex h-20 items-center justify-between">
+        <div className="flex h-16 items-center justify-between">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-3">
             <img
@@ -155,6 +197,10 @@ export function PublicHeader() {
                             className={`block mb-3 pb-2 font-bold text-sm text-gray-900 border-b-2 ${
                               category.underlineColor === "teal"
                                 ? "border-teal-500"
+                                : category.underlineColor === "purple"
+                                ? "border-purple-600"
+                                : category.underlineColor === "amber"
+                                ? "border-amber-600"
                                 : "border-gray-600"
                             }`}
                             onClick={() => setOpenDropdown(null)}
@@ -208,46 +254,7 @@ export function PublicHeader() {
           {/* Right side actions */}
           <div className="hidden lg:flex items-center gap-4">
             {isAuthenticated ? (
-              <div className="relative">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex items-center gap-2"
-                  onClick={() => setUserMenuOpen(!userMenuOpen)}
-                >
-                  <User className="h-4 w-4" />
-                  <span>{user?.fullName || user?.username || "Người dùng"}</span>
-                  <ChevronDown className="h-4 w-4" />
-                </Button>
-                {userMenuOpen && (
-                  <div
-                    className="absolute right-0 top-full mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50"
-                    onMouseLeave={() => setUserMenuOpen(false)}
-                  >
-                    <div className="px-4 py-2 border-b border-gray-200">
-                      <p className="text-sm font-medium text-gray-900">
-                        {user?.fullName || user?.username}
-                      </p>
-                      <p className="text-xs text-gray-500">{user?.role}</p>
-                    </div>
-                    <Link
-                      to="/dashboard"
-                      className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                      onClick={() => setUserMenuOpen(false)}
-                    >
-                      <LayoutDashboard className="h-4 w-4" />
-                      Chuyển sang trang quản lý
-                    </Link>
-                    <button
-                      onClick={handleLogout}
-                      className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                    >
-                      <LogOut className="h-4 w-4" />
-                      Đăng xuất
-                    </button>
-                  </div>
-                )}
-              </div>
+              <UserDropdown variant="desktop" />
             ) : (
               <>
                 <Link to="/login">
@@ -363,36 +370,10 @@ export function PublicHeader() {
               ))}
               <div className="mt-4 pt-4 border-t border-gray-200 flex flex-col gap-2">
                 {isAuthenticated ? (
-                  <>
-                    <div className="px-4 py-2 border-b border-gray-200 mb-2">
-                      <p className="text-sm font-medium text-gray-900">
-                        {user?.fullName || user?.username}
-                      </p>
-                      <p className="text-xs text-gray-500">{user?.role}</p>
-                    </div>
-                    <Link
-                      to="/dashboard"
-                      onClick={() => setMobileMenuOpen(false)}
-                      className="w-full"
-                    >
-                      <Button variant="outline" className="w-full" size="sm">
-                        <LayoutDashboard className="h-4 w-4 mr-2" />
-                        Chuyển sang trang quản lý
-                      </Button>
-                    </Link>
-                    <Button
-                      variant="outline"
-                      className="w-full text-red-600 hover:text-red-700"
-                      size="sm"
-                      onClick={() => {
-                        handleLogout()
-                        setMobileMenuOpen(false)
-                      }}
-                    >
-                      <LogOut className="h-4 w-4 mr-2" />
-                      Đăng xuất
-                    </Button>
-                  </>
+                  <UserDropdown
+                    variant="mobile"
+                    onMenuClose={() => setMobileMenuOpen(false)}
+                  />
                 ) : (
                   <>
                     <Link to="/login" onClick={() => setMobileMenuOpen(false)}>

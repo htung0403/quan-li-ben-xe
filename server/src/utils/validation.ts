@@ -1,8 +1,17 @@
 import { z } from 'zod'
 
 export const loginSchema = z.object({
-  username: z.string().min(1, 'Username is required'),
+  usernameOrEmail: z.string().min(1, 'Username or email is required'),
   password: z.string().min(1, 'Password is required'),
+})
+
+export const registerSchema = z.object({
+  username: z.string().min(3, 'Username must be at least 3 characters').max(50, 'Username must be at most 50 characters'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+  fullName: z.string().min(1, 'Full name is required').max(100, 'Full name must be at most 100 characters'),
+  email: z.string().email('Invalid email address').optional().or(z.literal('')),
+  phone: z.string().max(20, 'Phone number must be at most 20 characters').optional().or(z.literal('')),
+  role: z.enum(['admin', 'dispatcher', 'accountant', 'reporter']).optional(),
 })
 
 export const driverSchema = z.object({

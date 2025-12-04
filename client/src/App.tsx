@@ -4,6 +4,7 @@ import { useAuthStore } from "@/store/auth.store"
 import { MainLayout } from "@/components/layout/MainLayout"
 import { PublicLayout } from "@/components/layout/PublicLayout"
 import Login from "@/pages/Login"
+import Register from "@/pages/Register"
 import HomePage from "@/pages/HomePage"
 import Dashboard from "@/pages/Dashboard"
 import Dispatch from "@/pages/Dispatch"
@@ -11,6 +12,13 @@ import Payment from "@/pages/Payment"
 import Vehicles from "@/pages/Vehicles"
 import Drivers from "@/pages/Drivers"
 import Reports from "@/pages/Reports"
+import Profile from "@/pages/Profile"
+import ElectronicTicketPricing from "@/pages/pricing/ElectronicTicketPricing"
+import DispatchOrderPricing from "@/pages/pricing/DispatchOrderPricing"
+import IcorpSignaturePricing from "@/pages/pricing/IcorpSignaturePricing"
+import IcorpInvoicePricing from "@/pages/pricing/IcorpInvoicePricing"
+import ConsignmentTicketGuide from "@/pages/guide/ConsignmentTicketGuide"
+import Contact from "@/pages/Contact"
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading, checkAuth } = useAuthStore()
@@ -42,6 +50,7 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
         <Route
           path="/"
           element={
@@ -112,6 +121,60 @@ function App() {
                 <Reports />
               </MainLayout>
             </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedRoute>
+              <PublicLayout>
+                <Profile />
+              </PublicLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/pricing/electronic-ticket"
+          element={
+            <PublicLayout>
+              <ElectronicTicketPricing />
+            </PublicLayout>
+          }
+        />
+        <Route
+          path="/pricing/dispatch-order"
+          element={
+            <PublicLayout>
+              <DispatchOrderPricing />
+            </PublicLayout>
+          }
+        />
+        <Route
+          path="/pricing/icorp-signature"
+          element={
+            <PublicLayout>
+              <IcorpSignaturePricing />
+            </PublicLayout>
+          }
+        />
+        <Route
+          path="/pricing/icorp-invoice"
+          element={
+            <PublicLayout>
+              <IcorpInvoicePricing />
+            </PublicLayout>
+          }
+        />
+        <Route
+          path="/guide/bus-station/consignment"
+          element={<ConsignmentTicketGuide />}
+        />
+        <Route
+          path="/contact"
+          element={
+            <PublicLayout>
+              <Contact />
+            </PublicLayout>
           }
         />
         <Route path="*" element={<Navigate to="/" replace />} />

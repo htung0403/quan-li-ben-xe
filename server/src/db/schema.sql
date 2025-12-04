@@ -17,7 +17,7 @@ CREATE TABLE users (
     full_name VARCHAR(100) NOT NULL,
     email VARCHAR(100) UNIQUE,
     phone VARCHAR(20),
-    role VARCHAR(20) NOT NULL CHECK (role IN ('admin', 'dispatcher', 'accountant', 'reporter')),
+    role VARCHAR(20) NOT NULL DEFAULT 'user' CHECK (role IN ('admin', 'dispatcher', 'accountant', 'reporter', 'user')),
     is_active BOOLEAN DEFAULT true,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP

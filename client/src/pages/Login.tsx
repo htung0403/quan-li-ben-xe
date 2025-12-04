@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, Link } from "react-router-dom"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
@@ -14,7 +14,7 @@ import logo from "@/assets/logo.png"
 import backgroundImage from "@/assets/ben-xe.webp"
 
 const loginSchema = z.object({
-  username: z.string().min(1, "Tên đăng nhập là bắt buộc"),
+  usernameOrEmail: z.string().min(1, "Tên đăng nhập hoặc email là bắt buộc"),
   password: z.string().min(1, "Mật khẩu là bắt buộc"),
   rememberMe: z.boolean().optional(),
 })
@@ -42,10 +42,10 @@ export default function Login() {
     try {
       setIsLoading(true)
       setError("")
-      await login(data.username, data.password, data.rememberMe)
+      await login(data.usernameOrEmail, data.password, data.rememberMe)
       navigate("/") // Chuyển về trang chủ sau khi đăng nhập
     } catch (err) {
-      setError("Tên đăng nhập hoặc mật khẩu không đúng")
+      setError("Tên đăng nhập/email hoặc mật khẩu không đúng")
     } finally {
       setIsLoading(false)
     }
@@ -85,19 +85,19 @@ export default function Login() {
             )}
 
             <div className="space-y-2">
-              <Label htmlFor="username">Tên đăng nhập</Label>
+              <Label htmlFor="usernameOrEmail">Tên đăng nhập hoặc Email</Label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                 <Input
-                  id="username"
+                  id="usernameOrEmail"
                   type="text"
-                  placeholder="Nhập tên đăng nhập"
+                  placeholder="Nhập tên đăng nhập hoặc email"
                   className="pl-10"
-                  {...register("username")}
+                  {...register("usernameOrEmail")}
                 />
               </div>
-              {errors.username && (
-                <p className="text-sm text-red-600">{errors.username.message}</p>
+              {errors.usernameOrEmail && (
+                <p className="text-sm text-red-600">{errors.usernameOrEmail.message}</p>
               )}
             </div>
 
@@ -138,6 +138,13 @@ export default function Login() {
             >
               {isLoading ? "Đang đăng nhập..." : "Đăng nhập"}
             </Button>
+
+            <div className="text-center text-sm">
+              <span className="text-gray-600">Chưa có tài khoản? </span>
+              <Link to="/register" className="text-primary hover:underline font-medium">
+                Đăng ký ngay
+              </Link>
+            </div>
           </form>
         </CardContent>
       </Card>
