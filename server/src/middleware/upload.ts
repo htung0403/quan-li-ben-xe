@@ -1,13 +1,13 @@
-import multer, { FileFilterCallback } from 'multer'
+import multer, { FileFilterCallback, StorageEngine } from 'multer'
 import path from 'path'
 import { Request } from 'express'
 
 // Configure storage
-const storage = multer.diskStorage({
-  destination: function (_req, _file, cb) {
+const storage: StorageEngine = multer.diskStorage({
+  destination: function (_req: Request, _file: Express.Multer.File, cb: (error: Error | null, destination: string) => void) {
     cb(null, 'uploads/') // Make sure this directory exists
   },
-  filename: function (_req, file, cb) {
+  filename: function (_req: Request, file: Express.Multer.File, cb: (error: Error | null, filename: string) => void) {
     cb(null, `${Date.now()}-${file.originalname}`)
   }
 })
