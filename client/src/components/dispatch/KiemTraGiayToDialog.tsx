@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react"
-import { Calendar, X, CheckCircle } from "lucide-react"
+import { toast } from "react-toastify"
+import { X, CheckCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
   Dialog,
@@ -9,23 +9,24 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog"
+import { DatePicker } from "@/components/DatePicker"
 import { vehicleService } from "@/services/vehicle.service"
 import type { Vehicle, VehicleDocuments } from "@/types"
 import { format } from "date-fns"
 
-interface DocumentValidityDialogProps {
+interface KiemTraGiayToDialogProps {
   vehicleId: string
   open: boolean
   onClose: () => void
   onSuccess?: () => void
 }
 
-export function DocumentValidityDialog({
+export function KiemTraGiayToDialog({
   vehicleId,
   open,
   onClose,
   onSuccess
-}: DocumentValidityDialogProps) {
+}: KiemTraGiayToDialogProps) {
   const [vehicle, setVehicle] = useState<Vehicle | null>(null)
   const [documents, setDocuments] = useState<VehicleDocuments>({})
   const [isLoading, setIsLoading] = useState(false)
@@ -54,7 +55,7 @@ export function DocumentValidityDialog({
     for (const docType of requiredDocs) {
       const doc = documents[docType]
       if (!doc || !doc.expiryDate) {
-        alert(`Vui lòng nhập ngày hết hạn cho ${getDocumentLabel(docType)}`)
+        toast.warning(`Vui lòng nhập ngày hết hạn cho ${getDocumentLabel(docType)}`)
         return
       }
     }
@@ -127,7 +128,7 @@ export function DocumentValidityDialog({
         errorMessage = error.message
       }
       
-      alert(errorMessage)
+      toast.error(errorMessage)
     } finally {
       setIsLoading(false)
     }
@@ -143,7 +144,8 @@ export function DocumentValidityDialog({
     return labels[docType] || docType
   }
 
-  const updateDocumentDate = (docType: keyof VehicleDocuments, value: string) => {
+  const updateDocumentDate = (docType: keyof VehicleDocuments, date: Date | undefined) => {
+    const value = date ? format(date, "yyyy-MM-dd") : ""
     setDocuments(prev => {
       const updated = { ...prev }
       if (!updated[docType]) {
@@ -201,8 +203,8 @@ export function DocumentValidityDialog({
   const insuranceStatus = getDocumentStatus(insuranceExpiry)
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl">
+    <Dialog open={open} onOpenChange={onClose} className="w-full flex justify-center">
+      <DialogContent className="max-w-xs">
         <DialogHeader>
           <DialogTitle>Sửa hiệu lực giấy tờ</DialogTitle>
         </DialogHeader>
@@ -213,17 +215,15 @@ export function DocumentValidityDialog({
             <Label htmlFor="registrationExpiry">
               Đăng ký xe <span className="text-red-500">(*)</span>
             </Label>
-            <div className="relative mt-1">
-              <Input
-                id="registrationExpiry"
-                type="date"
-                value={registrationExpiry ? format(new Date(registrationExpiry), "yyyy-MM-dd") : ""}
-                onChange={(e) => updateDocumentDate('registration', e.target.value)}
-                className="pr-20"
-                required
-              />
-              <Calendar className="absolute right-12 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 pointer-events-none" />
-              <div className="absolute right-3 top-1/2 -translate-y-1/2">
+            <div className="relative mt-1 flex items-center gap-2">
+              <div className="flex-1">
+                <DatePicker
+                  date={registrationExpiry ? new Date(registrationExpiry) : null}
+                  onDateChange={(date) => updateDocumentDate('registration', date)}
+                  placeholder="Chọn ngày hết hạn"
+                />
+              </div>
+              <div>
                 {registrationStatus.icon}
               </div>
             </div>
@@ -234,17 +234,15 @@ export function DocumentValidityDialog({
             <Label htmlFor="permitExpiry">
               Hạn phù hiệu <span className="text-red-500">(*)</span>
             </Label>
-            <div className="relative mt-1">
-              <Input
-                id="permitExpiry"
-                type="date"
-                value={permitExpiry ? format(new Date(permitExpiry), "yyyy-MM-dd") : ""}
-                onChange={(e) => updateDocumentDate('operation_permit', e.target.value)}
-                className="pr-20"
-                required
-              />
-              <Calendar className="absolute right-12 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 pointer-events-none" />
-              <div className="absolute right-3 top-1/2 -translate-y-1/2">
+            <div className="relative mt-1 flex items-center gap-2">
+              <div className="flex-1">
+                <DatePicker
+                  date={permitExpiry ? new Date(permitExpiry) : null}
+                  onDateChange={(date) => updateDocumentDate('operation_permit', date)}
+                  placeholder="Chọn ngày hết hạn"
+                />
+              </div>
+              <div>
                 {permitStatus.icon}
               </div>
             </div>
@@ -255,17 +253,15 @@ export function DocumentValidityDialog({
             <Label htmlFor="inspectionExpiry">
               Hạn đăng kiểm <span className="text-red-500">(*)</span>
             </Label>
-            <div className="relative mt-1">
-              <Input
-                id="inspectionExpiry"
-                type="date"
-                value={inspectionExpiry ? format(new Date(inspectionExpiry), "yyyy-MM-dd") : ""}
-                onChange={(e) => updateDocumentDate('inspection', e.target.value)}
-                className="pr-20"
-                required
-              />
-              <Calendar className="absolute right-12 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 pointer-events-none" />
-              <div className="absolute right-3 top-1/2 -translate-y-1/2">
+            <div className="relative mt-1 flex items-center gap-2">
+              <div className="flex-1">
+                <DatePicker
+                  date={inspectionExpiry ? new Date(inspectionExpiry) : null}
+                  onDateChange={(date) => updateDocumentDate('inspection', date)}
+                  placeholder="Chọn ngày hết hạn"
+                />
+              </div>
+              <div>
                 {inspectionStatus.icon}
               </div>
             </div>
@@ -276,17 +272,15 @@ export function DocumentValidityDialog({
             <Label htmlFor="insuranceExpiry">
               Hạn bảo hiểm <span className="text-red-500">(*)</span>
             </Label>
-            <div className="relative mt-1">
-              <Input
-                id="insuranceExpiry"
-                type="date"
-                value={insuranceExpiry ? format(new Date(insuranceExpiry), "yyyy-MM-dd") : ""}
-                onChange={(e) => updateDocumentDate('insurance', e.target.value)}
-                className="pr-20"
-                required
-              />
-              <Calendar className="absolute right-12 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 pointer-events-none" />
-              <div className="absolute right-3 top-1/2 -translate-y-1/2">
+            <div className="relative mt-1 flex items-center gap-2">
+              <div className="flex-1">
+                <DatePicker
+                  date={insuranceExpiry ? new Date(insuranceExpiry) : null}
+                  onDateChange={(date) => updateDocumentDate('insurance', date)}
+                  placeholder="Chọn ngày hết hạn"
+                />
+              </div>
+              <div>
                 {insuranceStatus.icon}
               </div>
             </div>

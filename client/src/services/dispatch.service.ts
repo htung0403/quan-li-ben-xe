@@ -23,9 +23,10 @@ export const dispatchService = {
   },
 
   // New workflow methods
-  recordPassengerDrop: async (id: string, passengersArrived: number): Promise<DispatchRecord> => {
+  recordPassengerDrop: async (id: string, passengersArrived: number, routeId?: string): Promise<DispatchRecord> => {
     const response = await api.post<DispatchRecord>(`/dispatch/${id}/passenger-drop`, {
       passengersArrived,
+      routeId,
     })
     return response.data
   },
@@ -33,11 +34,13 @@ export const dispatchService = {
   issuePermit: async (
     id: string,
     data: {
-      transportOrderCode: string
+      transportOrderCode?: string
       plannedDepartureTime: string
       seatCount: number
       permitStatus?: 'approved' | 'rejected'
       rejectionReason?: string
+      routeId?: string
+      scheduleId?: string
     }
   ): Promise<DispatchRecord> => {
     const response = await api.post<DispatchRecord>(`/dispatch/${id}/permit`, data)
@@ -63,8 +66,11 @@ export const dispatchService = {
     return response.data
   },
 
-  recordExit: async (id: string): Promise<DispatchRecord> => {
-    const response = await api.post<DispatchRecord>(`/dispatch/${id}/exit`)
+  recordExit: async (id: string, exitTime?: string, passengersDeparting?: number): Promise<DispatchRecord> => {
+    const response = await api.post<DispatchRecord>(`/dispatch/${id}/exit`, {
+      exitTime,
+      passengersDeparting
+    })
     return response.data
   },
 

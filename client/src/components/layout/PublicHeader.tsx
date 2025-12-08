@@ -262,7 +262,7 @@ export function PublicHeader() {
                     Đăng nhập
                   </Button>
                 </Link>
-                <Link to="/contact">
+                <Link to="/lien-he">
                   <Button size="sm">Liên hệ</Button>
                 </Link>
               </>
@@ -381,7 +381,7 @@ export function PublicHeader() {
                         Đăng nhập
                       </Button>
                     </Link>
-                    <Link to="/contact" onClick={() => setMobileMenuOpen(false)}>
+                    <Link to="/lien-he" onClick={() => setMobileMenuOpen(false)}>
                       <Button className="w-full" size="sm">
                         Liên hệ
                       </Button>

@@ -18,6 +18,7 @@ import invoiceRoutes from './routes/invoice.routes.js'
 import serviceChargeRoutes from './routes/service-charge.routes.js'
 import reportRoutes from './routes/report.routes.js'
 import dashboardRoutes from './routes/dashboard.routes.js'
+import uploadRoutes from './routes/upload.routes.js'
 
 dotenv.config()
 
@@ -87,6 +88,7 @@ app.use('/api/invoices', invoiceRoutes)
 app.use('/api/service-charges', serviceChargeRoutes)
 app.use('/api/reports', reportRoutes)
 app.use('/api/dashboard', dashboardRoutes)
+app.use('/api/upload', uploadRoutes)
 
 // Error handling
 app.use(errorHandler)

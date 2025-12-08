@@ -16,7 +16,7 @@ export function UserDropdown({
   variant = "desktop",
   onMenuClose,
   homeLink = "/dashboard",
-  homeLabel = "Chuyển sang trang quản lý",
+  homeLabel = "Trang quản lý",
   homeIcon = <LayoutDashboard className="h-4 w-4" />,
 }: UserDropdownProps) {
   const [userMenuOpen, setUserMenuOpen] = useState(false)
@@ -45,16 +45,6 @@ export function UserDropdown({
           <p className="text-xs text-gray-500">{user?.role}</p>
         </div>
         <Link
-          to={homeLink}
-          onClick={handleMenuClose}
-          className="w-full"
-        >
-          <Button variant="outline" className="w-full" size="sm">
-            {homeIcon && <span className="mr-2">{homeIcon}</span>}
-            {homeLabel}
-          </Button>
-        </Link>
-        <Link
           to="/profile"
           onClick={handleMenuClose}
           className="w-full"
@@ -62,6 +52,16 @@ export function UserDropdown({
           <Button variant="outline" className="w-full" size="sm">
             <UserCircle className="h-4 w-4 mr-2" />
             Thông tin cá nhân
+          </Button>
+        </Link>
+        <Link
+          to={homeLink}
+          onClick={handleMenuClose}
+          className="w-full"
+        >
+          <Button variant="outline" className="w-full" size="sm">
+            {homeIcon && <span className="mr-2">{homeIcon}</span>}
+            {homeLabel}
           </Button>
         </Link>
         <Button
@@ -101,20 +101,20 @@ export function UserDropdown({
             <p className="text-xs text-gray-500">{user?.role}</p>
           </div>
           <Link
+            to="/profile"
+            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+            onClick={handleMenuClose}
+          >
+            <UserCircle className="h-4 w-4" />
+            Thông tin cá nhân
+          </Link>
+          <Link
             to={homeLink}
             className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
             onClick={handleMenuClose}
           >
             {homeIcon}
             {homeLabel}
-          </Link>
-          <Link
-            to="/profile"
-            className="flex items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-            onClick={handleMenuClose}
-          >
-            <UserCircle className="h-4 w-4" />
-            Trang profile
           </Link>
           <button
             onClick={handleLogout}

@@ -23,10 +23,17 @@ export interface Operator {
   name: string
   code: string
   taxCode?: string
+  
+  isTicketDelegated: boolean
+  province?: string
+  district?: string
   address?: string
+  
   phone?: string
   email?: string
   representativeName?: string
+  representativePosition?: string
+  
   contractNumber?: string
   contractStartDate?: string
   contractEndDate?: string
@@ -39,10 +46,17 @@ export interface OperatorInput {
   name: string
   code: string
   taxCode?: string
+  
+  isTicketDelegated?: boolean
+  province?: string
+  district?: string
   address?: string
+  
   phone?: string
   email?: string
   representativeName?: string
+  representativePosition?: string
+  
   contractNumber?: string
   contractStartDate?: string
   contractEndDate?: string
@@ -70,10 +84,24 @@ export interface Vehicle {
   operatorId: string
   operator?: Operator
   seatCapacity: number
+  bedCapacity?: number
   manufactureYear?: number
   chassisNumber?: string
   engineNumber?: string
   color?: string
+  imageUrl?: string
+  
+  insuranceExpiryDate?: string
+  inspectionExpiryDate?: string
+  
+  cargoLength?: number
+  cargoWidth?: number
+  cargoHeight?: number
+  
+  gpsProvider?: string
+  gpsUsername?: string
+  gpsPassword?: string
+
   isActive: boolean
   notes?: string
   documents?: VehicleDocuments
@@ -104,10 +132,24 @@ export interface VehicleInput {
   vehicleTypeId?: string
   operatorId: string
   seatCapacity: number
+  bedCapacity?: number
   manufactureYear?: number
   chassisNumber?: string
   engineNumber?: string
   color?: string
+  imageUrl?: string
+  
+  insuranceExpiryDate?: string
+  inspectionExpiryDate?: string
+  
+  cargoLength?: number
+  cargoWidth?: number
+  cargoHeight?: number
+  
+  gpsProvider?: string
+  gpsUsername?: string
+  gpsPassword?: string
+
   notes?: string
   documents?: VehicleDocuments
 }
@@ -122,6 +164,8 @@ export interface Driver {
   dateOfBirth?: string
   phone?: string
   email?: string
+  province?: string
+  district?: string
   address?: string
   licenseNumber: string
   licenseClass: string
@@ -142,6 +186,8 @@ export interface DriverInput {
   dateOfBirth?: string
   phone?: string
   email?: string
+  province?: string
+  district?: string
   address?: string
   licenseNumber: string
   licenseClass: string
@@ -157,6 +203,9 @@ export interface Location {
   id: string
   name: string
   code: string
+  stationType?: string
+  phone?: string
+  email?: string
   province?: string
   district?: string
   address?: string
@@ -169,6 +218,9 @@ export interface Location {
 export interface LocationInput {
   name: string
   code: string
+  stationType?: string
+  phone?: string
+  email?: string
   province?: string
   district?: string
   address?: string
@@ -187,6 +239,13 @@ export interface Route {
   destination?: Location
   distanceKm?: number
   estimatedDurationMinutes?: number
+  
+  plannedFrequency?: string
+  boardingPoint?: string
+  journeyDescription?: string
+  departureTimesDescription?: string
+  restStops?: string
+  
   isActive: boolean
   stops?: RouteStop[]
   createdAt: string
@@ -211,6 +270,13 @@ export interface RouteInput {
   destinationId: string
   distanceKm?: number
   estimatedDurationMinutes?: number
+  
+  plannedFrequency?: string
+  boardingPoint?: string
+  journeyDescription?: string
+  departureTimesDescription?: string
+  restStops?: string
+  
   stops?: Omit<RouteStop, 'id' | 'routeId' | 'createdAt'>[]
 }
 

@@ -10,7 +10,7 @@ const steps = [
   { label: "Bước 4: Thanh toán", path: "/guide/bus-station/consignment", scrollId: "step4" },
 ]
 
-export default function ConsignmentTicketGuide() {
+export default function HuongDanBanVeUyThac() {
   return (
     <GuideLayout title="HƯỚNG DẪN BÁN VÉ ỦY THÁC" steps={steps}>
       <div className="p-6 lg:p-8">

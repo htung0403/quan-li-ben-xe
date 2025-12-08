@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import { toast } from "react-toastify"
 import { Plus, Search, Edit, Eye, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -19,24 +20,13 @@ import {
   DialogTitle,
   DialogClose,
 } from "@/components/ui/dialog"
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs"
 import { Label } from "@/components/ui/label"
 import { Select } from "@/components/ui/select"
 import { vehicleService } from "@/services/vehicle.service"
-import type { Vehicle, VehicleInput } from "@/types"
-import { format } from "date-fns"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { z } from "zod"
-
-const vehicleSchema = z.object({
-  plateNumber: z.string().min(1, "Biển số là bắt buộc"),
-  vehicleType: z.string().min(1, "Loại xe là bắt buộc"),
-  seatCapacity: z.number().min(1, "Số ghế phải lớn hơn 0"),
-  operatorId: z.string().min(1, "Nhà xe là bắt buộc"),
-})
-
-type VehicleFormData = z.infer<typeof vehicleSchema>
+import type { Vehicle } from "@/types"
+import { useUIStore } from "@/store/ui.store"
+import { VehicleView } from "@/components/vehicle/VehicleView"
+import { VehicleForm } from "@/components/vehicle/VehicleForm"
 
 // Helper functions to extract display values
 const getVehicleTypeName = (vehicle: Vehicle): string => {
@@ -47,7 +37,7 @@ const getOperatorName = (vehicle: Vehicle): string => {
   return vehicle.operator?.name || vehicle.operatorId || ""
 }
 
-export default function Vehicles() {
+export default function QuanLyXe() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [filterVehicleType, setFilterVehicleType] = useState("")
@@ -56,10 +46,12 @@ export default function Vehicles() {
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [viewMode, setViewMode] = useState<"create" | "edit" | "view">("create")
+  const setTitle = useUIStore((state) => state.setTitle)
 
   useEffect(() => {
+    setTitle("Quản lý xe")
     loadVehicles()
-  }, [])
+  }, [setTitle])
 
   const loadVehicles = async () => {
     setIsLoading(true)
@@ -68,7 +60,7 @@ export default function Vehicles() {
       setVehicles(data)
     } catch (error) {
       console.error("Failed to load vehicles:", error)
-      alert("Không thể tải danh sách xe. Vui lòng thử lại sau.")
+      toast.error("Không thể tải danh sách xe. Vui lòng thử lại sau.")
     } finally {
       setIsLoading(false)
     }
@@ -127,7 +119,7 @@ export default function Vehicles() {
   }
 
   const handleDelete = async (id: string) => {
-    if (confirm("Bạn có chắc chắn muốn xóa xe này?")) {
+    if (window.confirm("Bạn có chắc chắn muốn xóa xe này?")) {
       try {
         await vehicleService.delete(id)
         loadVehicles()
@@ -139,11 +131,7 @@ export default function Vehicles() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Quản lý xe</h1>
-          <p className="text-gray-600 mt-1">Quản lý thông tin và giấy tờ xe</p>
-        </div>
+      <div className="flex items-center justify-end">
         <Button onClick={handleCreate}>
           <Plus className="mr-2 h-4 w-4" />
           Thêm xe
@@ -208,12 +196,12 @@ export default function Vehicles() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Biển số</TableHead>
-              <TableHead>Loại xe</TableHead>
-              <TableHead>Số ghế</TableHead>
-              <TableHead>Nhà xe</TableHead>
-              <TableHead>Trạng thái</TableHead>
-              <TableHead>Thao tác</TableHead>
+              <TableHead className="text-center">Biển số</TableHead>
+              <TableHead className="text-center">Loại xe</TableHead>
+              <TableHead className="text-center">Số ghế</TableHead>
+              <TableHead className="text-center">Nhà xe</TableHead>
+              <TableHead className="text-center">Trạng thái</TableHead>
+              <TableHead className="text-center">Thao tác</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -232,17 +220,17 @@ export default function Vehicles() {
             ) : (
               filteredVehicles.map((vehicle) => (
                 <TableRow key={vehicle.id}>
-                  <TableCell className="font-medium">
+                  <TableCell className="font-medium text-center">
                     {vehicle.plateNumber}
                   </TableCell>
-                  <TableCell>{getVehicleTypeName(vehicle)}</TableCell>
-                  <TableCell>{vehicle.seatCapacity}</TableCell>
-                  <TableCell>{getOperatorName(vehicle)}</TableCell>
-                  <TableCell>
+                  <TableCell className="text-center">{getVehicleTypeName(vehicle)}</TableCell>
+                  <TableCell className="text-center">{vehicle.seatCapacity}</TableCell>
+                  <TableCell className="text-center">{getOperatorName(vehicle)}</TableCell>
+                  <TableCell className="text-center">
                     <StatusBadge status={vehicle.isActive ? "active" : "inactive"} />
                   </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
+                  <TableCell className="text-center">
+                    <div className="flex items-center justify-center gap-2">
                       <Button
                         size="sm"
                         variant="ghost"
@@ -307,201 +295,9 @@ export default function Vehicles() {
   )
 }
 
-function VehicleView({ vehicle }: { vehicle: Vehicle }) {
-  const [activeTab, setActiveTab] = useState("info")
-  
-  return (
-    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-      <TabsList className="grid w-full grid-cols-3">
-        <TabsTrigger value="info">Thông tin cơ bản</TabsTrigger>
-        <TabsTrigger value="documents">Giấy tờ</TabsTrigger>
-        <TabsTrigger value="history">Lịch sử hoạt động</TabsTrigger>
-      </TabsList>
-      <TabsContent value="info" className="space-y-6 mt-6">
-        <div className="grid grid-cols-2 gap-6">
-          <div className="space-y-2">
-            <Label className="text-base font-semibold">Biển số</Label>
-            <p className="text-lg font-medium text-gray-900">{vehicle.plateNumber}</p>
-          </div>
-          <div className="space-y-2">
-            <Label className="text-base font-semibold">Loại xe</Label>
-            <p className="text-lg font-medium text-gray-900">
-              {getVehicleTypeName(vehicle)}
-            </p>
-          </div>
-          <div className="space-y-2">
-            <Label className="text-base font-semibold">Số ghế</Label>
-            <p className="text-lg font-medium text-gray-900">{vehicle.seatCapacity}</p>
-          </div>
-          <div className="space-y-2">
-            <Label className="text-base font-semibold">Nhà xe</Label>
-            <p className="text-lg font-medium text-gray-900">
-              {getOperatorName(vehicle)}
-            </p>
-          </div>
-        </div>
-      </TabsContent>
-      <TabsContent value="documents" className="space-y-4 mt-6">
-        <div className="space-y-4">
-          {vehicle.documents?.inspection && (
-            <DocumentCard
-              title="Đăng kiểm"
-              doc={vehicle.documents.inspection}
-            />
-          )}
-          {vehicle.documents?.operation_permit && (
-            <DocumentCard
-              title="Phù hiệu"
-              doc={vehicle.documents.operation_permit}
-            />
-          )}
-          {vehicle.documents?.insurance && (
-            <DocumentCard
-              title="Bảo hiểm"
-              doc={vehicle.documents.insurance}
-            />
-          )}
-        </div>
-      </TabsContent>
-      <TabsContent value="history" className="mt-6">
-        <p className="text-sm text-gray-500">Lịch sử hoạt động sẽ được hiển thị ở đây</p>
-      </TabsContent>
-    </Tabs>
-  )
-}
 
-function DocumentCard({
-  title,
-  doc,
-}: {
-  title: string
-  doc: { number: string; issueDate: string; expiryDate: string; isValid: boolean }
-}) {
-  return (
-    <Card>
-      <CardContent className="p-6">
-        <div className="flex items-center justify-between">
-          <div className="space-y-2">
-            <p className="font-semibold text-lg">{title}</p>
-            <p className="text-base text-gray-700">Số: {doc.number}</p>
-            <p className="text-base text-gray-700">
-              Hết hạn: {format(new Date(doc.expiryDate), "dd/MM/yyyy")}
-            </p>
-          </div>
-          <StatusBadge
-            status={doc.isValid ? "active" : "inactive"}
-            label={doc.isValid ? "Hợp lệ" : "Hết hạn"}
-          />
-        </div>
-      </CardContent>
-    </Card>
-  )
-}
 
-function VehicleForm({
-  vehicle,
-  mode,
-  onClose,
-}: {
-  vehicle: Vehicle | null
-  mode: "create" | "edit"
-  onClose: () => void
-}) {
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<VehicleFormData>({
-    resolver: zodResolver(vehicleSchema),
-    defaultValues: vehicle ? {
-      plateNumber: vehicle.plateNumber,
-      vehicleType: vehicle.vehicleType?.name || vehicle.vehicleTypeId || "",
-      seatCapacity: vehicle.seatCapacity,
-      operatorId: vehicle.operatorId,
-    } : undefined,
-  })
 
-  const onSubmit = async (data: VehicleFormData) => {
-    try {
-      if (mode === "create") {
-        await vehicleService.create(data as VehicleInput)
-      } else if (vehicle) {
-        await vehicleService.update(vehicle.id, data)
-      }
-      onClose()
-    } catch (error) {
-      console.error("Failed to save vehicle:", error)
-    }
-  }
 
-  return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-      <div className="grid grid-cols-2 gap-6">
-        <div className="space-y-2">
-          <Label htmlFor="plateNumber" className="text-base font-semibold">
-            Biển số *
-          </Label>
-          <Input
-            id="plateNumber"
-            className="h-11"
-            {...register("plateNumber")}
-          />
-          {errors.plateNumber && (
-            <p className="text-sm text-red-600 mt-1">{errors.plateNumber.message}</p>
-          )}
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="vehicleType" className="text-base font-semibold">
-            Loại xe *
-          </Label>
-          <Select
-            id="vehicleType"
-            className="h-11"
-            {...register("vehicleType")}
-          >
-            <option value="">Chọn loại xe</option>
-            <option value="Xe khách">Xe khách</option>
-            <option value="Xe tải">Xe tải</option>
-          </Select>
-          {errors.vehicleType && (
-            <p className="text-sm text-red-600 mt-1">{errors.vehicleType.message}</p>
-          )}
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="seatCapacity" className="text-base font-semibold">
-            Số ghế *
-          </Label>
-          <Input
-            id="seatCapacity"
-            type="number"
-            className="h-11"
-            {...register("seatCapacity", { valueAsNumber: true })}
-          />
-          {errors.seatCapacity && (
-            <p className="text-sm text-red-600 mt-1">{errors.seatCapacity.message}</p>
-          )}
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="operatorId" className="text-base font-semibold">
-            Nhà xe *
-          </Label>
-          <Input
-            id="operatorId"
-            className="h-11"
-            {...register("operatorId")}
-          />
-          {errors.operatorId && (
-            <p className="text-sm text-red-600 mt-1">{errors.operatorId.message}</p>
-          )}
-        </div>
-      </div>
-      <div className="flex justify-end gap-3 pt-4 border-t">
-        <Button type="button" variant="outline" onClick={onClose} className="min-w-[100px]">
-          Hủy
-        </Button>
-        <Button type="submit" className="min-w-[100px]">Lưu</Button>
-      </div>
-    </form>
-  )
-}
+
 

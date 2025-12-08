@@ -15,6 +15,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { format } from "date-fns"
 import { dashboardService } from "@/services/dashboard.service"
 import type { DashboardStats, ChartDataPoint, RecentActivity, Warning } from "@/services/dashboard.service"
+import { useUIStore } from "@/store/ui.store"
 
 export default function Dashboard() {
   const [stats, setStats] = useState<DashboardStats>({
@@ -27,10 +28,12 @@ export default function Dashboard() {
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([])
   const [warnings, setWarnings] = useState<Warning[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const setTitle = useUIStore((state) => state.setTitle)
 
   useEffect(() => {
+    setTitle("Tổng quan")
     loadDashboardData()
-  }, [])
+  }, [setTitle])
 
   const loadDashboardData = async () => {
     setIsLoading(true)
@@ -66,13 +69,6 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Tổng quan</h1>
-        <p className="text-gray-600 mt-1">
-          Thống kê và hoạt động của bến xe
-        </p>
-      </div>
-
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <DashboardCard

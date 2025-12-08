@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react"
+import { toast } from "react-toastify"
 import { Download, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -15,6 +16,7 @@ import {
 } from "@/components/ui/table"
 import { reportService } from "@/services/report.service"
 import { format, subDays } from "date-fns"
+import { useUIStore } from "@/store/ui.store"
 
 type ReportType = "invoices" | "vehicle-logs" | "station-activity" | "invalid-vehicles" | "revenue"
 
@@ -30,7 +32,7 @@ const safeFormatDate = (dateString: string | undefined | null): string => {
   }
 }
 
-export default function Reports() {
+export default function BaoCao() {
   const [reportType, setReportType] = useState<ReportType>("invoices")
   const [startDate, setStartDate] = useState(
     format(subDays(new Date(), 7), "yyyy-MM-dd")
@@ -38,6 +40,11 @@ export default function Reports() {
   const [endDate, setEndDate] = useState(format(new Date(), "yyyy-MM-dd"))
   const [isLoading, setIsLoading] = useState(false)
   const [data, setData] = useState<any[]>([])
+  const setTitle = useUIStore((state) => state.setTitle)
+
+  useEffect(() => {
+    setTitle("Báo cáo & Thống kê")
+  }, [setTitle])
 
   const loadReport = useCallback(async () => {
     setIsLoading(true)
@@ -66,7 +73,7 @@ export default function Reports() {
       setData(result)
     } catch (error) {
       console.error("Failed to load report:", error)
-      alert("Không thể tải báo cáo. Vui lòng thử lại sau.")
+      toast.error("Không thể tải báo cáo. Vui lòng thử lại sau.")
     } finally {
       setIsLoading(false)
     }
@@ -99,11 +106,7 @@ export default function Reports() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Báo cáo & Thống kê</h1>
-          <p className="text-gray-600 mt-1">Xem và xuất báo cáo</p>
-        </div>
+      <div className="flex items-start justify-end">
         <Button variant="outline" onClick={handleExport}>
           <Download className="mr-2 h-4 w-4" />
           Xuất Excel

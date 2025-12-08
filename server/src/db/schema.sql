@@ -36,13 +36,17 @@ CREATE TABLE operators (
     name VARCHAR(200) NOT NULL,
     code VARCHAR(20) UNIQUE NOT NULL,
     tax_code VARCHAR(50),
+    
+    is_ticket_delegated BOOLEAN DEFAULT false,
+    province VARCHAR(100),
+    district VARCHAR(100),
     address TEXT,
+    
     phone VARCHAR(20),
     email VARCHAR(100),
     representative_name VARCHAR(100),
-    contract_number VARCHAR(50),
-    contract_start_date DATE,
-    contract_end_date DATE,
+    representative_position VARCHAR(100),
+    
     is_active BOOLEAN DEFAULT true,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -61,12 +65,27 @@ CREATE TABLE vehicles (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     plate_number VARCHAR(20) UNIQUE NOT NULL,
     vehicle_type_id UUID REFERENCES vehicle_types(id),
-    operator_id UUID REFERENCES operators(id) NOT NULL,
-    seat_capacity INTEGER NOT NULL,
-    manufacture_year INTEGER,
+    operator_id UUID REFERENCES operators(id),
+    seat_capacity INTEGER NOT NULL DEFAULT 0,
+    bed_capacity INTEGER DEFAULT 0,
     chassis_number VARCHAR(50),
     engine_number VARCHAR(50),
-    color VARCHAR(50),
+    image_url TEXT,
+    
+    -- New fields
+    insurance_expiry_date DATE,
+    inspection_expiry_date DATE,
+    
+    -- Cargo dimensions (m)
+    cargo_length DECIMAL(10, 2),
+    cargo_width DECIMAL(10, 2),
+    cargo_height DECIMAL(10, 2),
+    
+    -- GPS Tracking
+    gps_provider VARCHAR(100),
+    gps_username VARCHAR(100),
+    gps_password VARCHAR(100),
+    
     is_active BOOLEAN DEFAULT true,
     notes TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -107,18 +126,17 @@ CREATE TABLE drivers (
     operator_id UUID REFERENCES operators(id) NOT NULL,
     full_name VARCHAR(100) NOT NULL,
     id_number VARCHAR(20) UNIQUE NOT NULL,
-    date_of_birth DATE,
     phone VARCHAR(20),
     email VARCHAR(100),
+    province VARCHAR(100),
+    district VARCHAR(100),
     address TEXT,
     license_number VARCHAR(50) NOT NULL,
     license_class VARCHAR(10) NOT NULL,
     license_issue_date DATE,
     license_expiry_date DATE NOT NULL,
-    health_certificate_expiry DATE,
     image_url TEXT,
     is_active BOOLEAN DEFAULT true,
-    notes TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -137,6 +155,9 @@ CREATE TABLE locations (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name VARCHAR(200) NOT NULL,
     code VARCHAR(20) UNIQUE NOT NULL,
+    station_type VARCHAR(50),
+    phone VARCHAR(20),
+    email VARCHAR(100),
     province VARCHAR(100),
     district VARCHAR(100),
     address TEXT,
@@ -158,6 +179,14 @@ CREATE TABLE routes (
     destination_id UUID REFERENCES locations(id) NOT NULL,
     distance_km DECIMAL(10, 2),
     estimated_duration_minutes INTEGER,
+    
+    -- New fields
+    planned_frequency VARCHAR(200),
+    boarding_point VARCHAR(200),
+    journey_description TEXT,
+    departure_times_description TEXT,
+    rest_stops TEXT,
+    
     is_active BOOLEAN DEFAULT true,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -187,7 +216,7 @@ CREATE INDEX idx_route_stops_route ON route_stops(route_id);
 
 CREATE TABLE schedules (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    schedule_code VARCHAR(50) UNIQUE NOT NULL,
+    schedule_code VARCHAR(50) UNIQUE,
     route_id UUID REFERENCES routes(id) NOT NULL,
     operator_id UUID REFERENCES operators(id) NOT NULL,
     departure_time TIME NOT NULL,
@@ -202,6 +231,64 @@ CREATE TABLE schedules (
 
 CREATE INDEX idx_schedules_route ON schedules(route_id);
 CREATE INDEX idx_schedules_operator ON schedules(operator_id);
+CREATE INDEX idx_schedules_code ON schedules(schedule_code);
+
+-- Function to generate schedule code automatically
+CREATE OR REPLACE FUNCTION generate_schedule_code()
+RETURNS TRIGGER AS $$
+DECLARE
+    route_code_val VARCHAR(50);
+    operator_code_val VARCHAR(20);
+    time_str VARCHAR(5);
+    new_code VARCHAR(50);
+    counter INTEGER := 1;
+BEGIN
+    -- Only generate code if schedule_code is NULL or empty
+    IF NEW.schedule_code IS NOT NULL AND NEW.schedule_code != '' THEN
+        RETURN NEW;
+    END IF;
+    
+    -- Get route code
+    SELECT route_code INTO route_code_val
+    FROM routes WHERE id = NEW.route_id;
+    
+    -- Get operator code
+    SELECT code INTO operator_code_val
+    FROM operators WHERE id = NEW.operator_id;
+    
+    -- Format departure time as HHMM (remove seconds if present)
+    time_str := SUBSTRING(REPLACE(NEW.departure_time::TEXT, ':', ''), 1, 4);
+    
+    -- Generate base code: BDG-{ROUTE_CODE}-{OPERATOR_CODE}-{HHMM}
+    new_code := 'BDG-' || COALESCE(route_code_val, 'UNK') || '-' || 
+                COALESCE(operator_code_val, 'UNK') || '-' || time_str;
+    
+    -- Ensure uniqueness by appending counter if needed
+    WHILE EXISTS (
+        SELECT 1 FROM schedules 
+        WHERE schedule_code = new_code 
+        AND (TG_OP = 'INSERT' OR id != NEW.id)
+    ) LOOP
+        new_code := 'BDG-' || COALESCE(route_code_val, 'UNK') || '-' || 
+                    COALESCE(operator_code_val, 'UNK') || '-' || time_str || '-' || LPAD(counter::TEXT, 2, '0');
+        counter := counter + 1;
+        
+        -- Safety check to prevent infinite loop
+        IF counter > 999 THEN
+            RAISE EXCEPTION 'Unable to generate unique schedule code after 999 attempts';
+        END IF;
+    END LOOP;
+    
+    NEW.schedule_code := new_code;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger to auto-generate schedule code before insert
+CREATE TRIGGER generate_schedule_code_trigger
+    BEFORE INSERT ON schedules
+    FOR EACH ROW
+    EXECUTE FUNCTION generate_schedule_code();
 
 -- ============================================
 -- 6. DISPATCH MANAGEMENT (CORE FEATURE)
@@ -212,7 +299,7 @@ CREATE TABLE dispatch_records (
     vehicle_id UUID REFERENCES vehicles(id) NOT NULL,
     driver_id UUID REFERENCES drivers(id) NOT NULL,
     schedule_id UUID REFERENCES schedules(id),
-    route_id UUID REFERENCES routes(id) NOT NULL,
+    route_id UUID REFERENCES routes(id),
     
     -- Entry timestamps
     entry_time TIMESTAMP NOT NULL,

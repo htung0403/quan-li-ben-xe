@@ -305,7 +305,7 @@ export default function HomePage() {
                 </p>
               </div>
               <div className="flex-shrink-0">
-                <Link to="/contact">
+                <Link to="/lien-he">
                   <Button size="lg" className="bg-teal-600 hover:bg-teal-700 text-white px-8">
                     Liên hệ
                   </Button>

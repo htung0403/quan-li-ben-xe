@@ -7,13 +7,14 @@ interface DialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   children: React.ReactNode
+  className?: string
 }
 
 interface DialogContentProps extends React.HTMLAttributes<HTMLDivElement> {
   children: React.ReactNode
 }
 
-const Dialog: React.FC<DialogProps> = ({ open, onOpenChange, children }) => {
+const Dialog: React.FC<DialogProps> = ({ open, onOpenChange, children, className }) => {
   if (!open) return null
 
   return (
@@ -22,7 +23,7 @@ const Dialog: React.FC<DialogProps> = ({ open, onOpenChange, children }) => {
       onClick={() => onOpenChange(false)}
     >
       <div className="fixed inset-0 bg-black/50" />
-      <div onClick={(e) => e.stopPropagation()} className="relative z-10">
+      <div onClick={(e) => e.stopPropagation()} className={cn("relative z-10 max-w-[95vw]", className)}>
         {children}
       </div>
     </div>
@@ -35,7 +36,7 @@ const DialogContent = React.forwardRef<HTMLDivElement, DialogContentProps>(
       <div
         ref={ref}
         className={cn(
-          "relative z-50 w-full max-w-2xl bg-white rounded-lg shadow-lg p-4 sm:p-6",
+          "relative z-50 bg-white rounded-lg shadow-lg p-4 sm:p-6",
           className
         )}
         {...props}
@@ -81,6 +82,20 @@ const DialogDescription = React.forwardRef<
 ))
 DialogDescription.displayName = "DialogDescription"
 
+const DialogFooter = ({
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLDivElement>) => (
+  <div
+    className={cn(
+      "flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2",
+      className
+    )}
+    {...props}
+  />
+)
+DialogFooter.displayName = "DialogFooter"
+
 const DialogClose: React.FC<{ onClose: () => void }> = ({ onClose }) => (
   <Button
     variant="ghost"
@@ -99,6 +114,7 @@ export {
   DialogHeader,
   DialogTitle,
   DialogDescription,
+  DialogFooter,
   DialogClose,
 }
 

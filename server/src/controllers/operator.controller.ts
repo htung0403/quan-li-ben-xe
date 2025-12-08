@@ -6,13 +6,16 @@ const operatorSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   code: z.string().min(1, 'Code is required'),
   taxCode: z.string().optional(),
+  
+  isTicketDelegated: z.boolean().optional(),
+  province: z.string().optional(),
+  district: z.string().optional(),
   address: z.string().optional(),
+  
   phone: z.string().optional(),
   email: z.string().email().optional().or(z.literal('')),
   representativeName: z.string().optional(),
-  contractNumber: z.string().optional(),
-  contractStartDate: z.string().optional(),
-  contractEndDate: z.string().optional(),
+  representativePosition: z.string().optional(),
 })
 
 export const getAllOperators = async (req: Request, res: Response) => {
@@ -37,13 +40,17 @@ export const getAllOperators = async (req: Request, res: Response) => {
       name: op.name,
       code: op.code,
       taxCode: op.tax_code,
+      
+      isTicketDelegated: op.is_ticket_delegated,
+      province: op.province,
+      district: op.district,
       address: op.address,
+      
       phone: op.phone,
       email: op.email,
       representativeName: op.representative_name,
-      contractNumber: op.contract_number,
-      contractStartDate: op.contract_start_date,
-      contractEndDate: op.contract_end_date,
+      representativePosition: op.representative_position,
+      
       isActive: op.is_active,
       createdAt: op.created_at,
       updatedAt: op.updated_at,
@@ -76,13 +83,17 @@ export const getOperatorById = async (req: Request, res: Response) => {
       name: data.name,
       code: data.code,
       taxCode: data.tax_code,
+      
+      isTicketDelegated: data.is_ticket_delegated,
+      province: data.province,
+      district: data.district,
       address: data.address,
+      
       phone: data.phone,
       email: data.email,
       representativeName: data.representative_name,
-      contractNumber: data.contract_number,
-      contractStartDate: data.contract_start_date,
-      contractEndDate: data.contract_end_date,
+      representativePosition: data.representative_position,
+      
       isActive: data.is_active,
       createdAt: data.created_at,
       updatedAt: data.updated_at,
@@ -103,13 +114,17 @@ export const createOperator = async (req: Request, res: Response) => {
         name: validated.name,
         code: validated.code,
         tax_code: validated.taxCode || null,
+        
+        is_ticket_delegated: validated.isTicketDelegated || false,
+        province: validated.province || null,
+        district: validated.district || null,
         address: validated.address || null,
+        
         phone: validated.phone || null,
         email: validated.email || null,
         representative_name: validated.representativeName || null,
-        contract_number: validated.contractNumber || null,
-        contract_start_date: validated.contractStartDate || null,
-        contract_end_date: validated.contractEndDate || null,
+        representative_position: validated.representativePosition || null,
+        
         is_active: true,
       })
       .select()
@@ -122,13 +137,17 @@ export const createOperator = async (req: Request, res: Response) => {
       name: data.name,
       code: data.code,
       taxCode: data.tax_code,
+      
+      isTicketDelegated: data.is_ticket_delegated,
+      province: data.province,
+      district: data.district,
       address: data.address,
+      
       phone: data.phone,
       email: data.email,
       representativeName: data.representative_name,
-      contractNumber: data.contract_number,
-      contractStartDate: data.contract_start_date,
-      contractEndDate: data.contract_end_date,
+      representativePosition: data.representative_position,
+      
       isActive: data.is_active,
       createdAt: data.created_at,
       updatedAt: data.updated_at,
@@ -154,13 +173,16 @@ export const updateOperator = async (req: Request, res: Response) => {
     if (validated.name) updateData.name = validated.name
     if (validated.code) updateData.code = validated.code
     if (validated.taxCode !== undefined) updateData.tax_code = validated.taxCode || null
+    
+    if (validated.isTicketDelegated !== undefined) updateData.is_ticket_delegated = validated.isTicketDelegated
+    if (validated.province !== undefined) updateData.province = validated.province || null
+    if (validated.district !== undefined) updateData.district = validated.district || null
     if (validated.address !== undefined) updateData.address = validated.address || null
+    
     if (validated.phone !== undefined) updateData.phone = validated.phone || null
     if (validated.email !== undefined) updateData.email = validated.email || null
     if (validated.representativeName !== undefined) updateData.representative_name = validated.representativeName || null
-    if (validated.contractNumber !== undefined) updateData.contract_number = validated.contractNumber || null
-    if (validated.contractStartDate !== undefined) updateData.contract_start_date = validated.contractStartDate || null
-    if (validated.contractEndDate !== undefined) updateData.contract_end_date = validated.contractEndDate || null
+    if (validated.representativePosition !== undefined) updateData.representative_position = validated.representativePosition || null
 
     const { data, error } = await supabase
       .from('operators')
@@ -179,13 +201,17 @@ export const updateOperator = async (req: Request, res: Response) => {
       name: data.name,
       code: data.code,
       taxCode: data.tax_code,
+      
+      isTicketDelegated: data.is_ticket_delegated,
+      province: data.province,
+      district: data.district,
       address: data.address,
+      
       phone: data.phone,
       email: data.email,
       representativeName: data.representative_name,
-      contractNumber: data.contract_number,
-      contractStartDate: data.contract_start_date,
-      contractEndDate: data.contract_end_date,
+      representativePosition: data.representative_position,
+      
       isActive: data.is_active,
       createdAt: data.created_at,
       updatedAt: data.updated_at,

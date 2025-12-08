@@ -5,6 +5,9 @@ import { z } from 'zod'
 const locationSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   code: z.string().min(1, 'Code is required'),
+  stationType: z.string().optional(),
+  phone: z.string().optional(),
+  email: z.string().email().optional().or(z.literal('')),
   province: z.string().optional(),
   district: z.string().optional(),
   address: z.string().optional(),
@@ -36,6 +39,9 @@ export const getAllLocations = async (req: Request, res: Response) => {
       id: loc.id,
       name: loc.name,
       code: loc.code,
+      stationType: loc.station_type,
+      phone: loc.phone,
+      email: loc.email,
       province: loc.province,
       district: loc.district,
       address: loc.address,
@@ -71,6 +77,9 @@ export const getLocationById = async (req: Request, res: Response) => {
       id: data.id,
       name: data.name,
       code: data.code,
+      stationType: data.station_type,
+      phone: data.phone,
+      email: data.email,
       province: data.province,
       district: data.district,
       address: data.address,
@@ -94,6 +103,9 @@ export const createLocation = async (req: Request, res: Response) => {
       .insert({
         name: validated.name,
         code: validated.code,
+        station_type: validated.stationType || null,
+        phone: validated.phone || null,
+        email: validated.email || null,
         province: validated.province || null,
         district: validated.district || null,
         address: validated.address || null,
@@ -110,6 +122,9 @@ export const createLocation = async (req: Request, res: Response) => {
       id: data.id,
       name: data.name,
       code: data.code,
+      stationType: data.station_type,
+      phone: data.phone,
+      email: data.email,
       province: data.province,
       district: data.district,
       address: data.address,
@@ -138,6 +153,9 @@ export const updateLocation = async (req: Request, res: Response) => {
     const updateData: any = {}
     if (validated.name) updateData.name = validated.name
     if (validated.code) updateData.code = validated.code
+    if (validated.stationType !== undefined) updateData.station_type = validated.stationType || null
+    if (validated.phone !== undefined) updateData.phone = validated.phone || null
+    if (validated.email !== undefined) updateData.email = validated.email || null
     if (validated.province !== undefined) updateData.province = validated.province || null
     if (validated.district !== undefined) updateData.district = validated.district || null
     if (validated.address !== undefined) updateData.address = validated.address || null
@@ -160,6 +178,9 @@ export const updateLocation = async (req: Request, res: Response) => {
       id: data.id,
       name: data.name,
       code: data.code,
+      stationType: data.station_type,
+      phone: data.phone,
+      email: data.email,
       province: data.province,
       district: data.district,
       address: data.address,

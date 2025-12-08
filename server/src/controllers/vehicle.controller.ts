@@ -5,12 +5,24 @@ import { z } from 'zod'
 const vehicleSchema = z.object({
   plateNumber: z.string().min(1, 'Plate number is required'),
   vehicleTypeId: z.string().uuid().optional(),
-  operatorId: z.string().uuid('Invalid operator ID'),
+  operatorId: z.string().uuid('Invalid operator ID').optional(),
   seatCapacity: z.number().int().positive('Seat capacity must be positive'),
-  manufactureYear: z.number().int().optional(),
+  bedCapacity: z.number().int().optional(),
   chassisNumber: z.string().optional(),
   engineNumber: z.string().optional(),
-  color: z.string().optional(),
+  imageUrl: z.string().url().optional().or(z.literal('')),
+  
+  insuranceExpiryDate: z.string().optional(),
+  inspectionExpiryDate: z.string().optional(),
+  
+  cargoLength: z.number().optional(),
+  cargoWidth: z.number().optional(),
+  cargoHeight: z.number().optional(),
+  
+  gpsProvider: z.string().optional(),
+  gpsUsername: z.string().optional(),
+  gpsPassword: z.string().optional(),
+
   notes: z.string().optional(),
   documents: z.object({
     registration: z.object({
@@ -119,10 +131,22 @@ export const getAllVehicles = async (req: Request, res: Response) => {
           code: vehicle.operators.code,
         } : undefined,
         seatCapacity: vehicle.seat_capacity,
-        manufactureYear: vehicle.manufacture_year,
+        bedCapacity: vehicle.bed_capacity,
         chassisNumber: vehicle.chassis_number,
         engineNumber: vehicle.engine_number,
-        color: vehicle.color,
+        imageUrl: vehicle.image_url,
+        
+        insuranceExpiryDate: vehicle.insurance_expiry_date,
+        inspectionExpiryDate: vehicle.inspection_expiry_date,
+        
+        cargoLength: vehicle.cargo_length,
+        cargoWidth: vehicle.cargo_width,
+        cargoHeight: vehicle.cargo_height,
+        
+        gpsProvider: vehicle.gps_provider,
+        gpsUsername: vehicle.gps_username,
+        gpsPassword: vehicle.gps_password,
+
         isActive: vehicle.is_active,
         notes: vehicle.notes,
         documents: {
@@ -199,10 +223,24 @@ export const getVehicleById = async (req: Request, res: Response) => {
         code: (vehicle as any).operators.code,
       } : undefined,
       seatCapacity: vehicle.seat_capacity,
+      bedCapacity: vehicle.bed_capacity,
       manufactureYear: vehicle.manufacture_year,
       chassisNumber: vehicle.chassis_number,
       engineNumber: vehicle.engine_number,
       color: vehicle.color,
+      imageUrl: vehicle.image_url,
+      
+      insuranceExpiryDate: vehicle.insurance_expiry_date,
+      inspectionExpiryDate: vehicle.inspection_expiry_date,
+      
+      cargoLength: vehicle.cargo_length,
+      cargoWidth: vehicle.cargo_width,
+      cargoHeight: vehicle.cargo_height,
+      
+      gpsProvider: vehicle.gps_provider,
+      gpsUsername: vehicle.gps_username,
+      gpsPassword: vehicle.gps_password,
+
       isActive: vehicle.is_active,
       notes: vehicle.notes,
       documents: {
@@ -226,7 +264,14 @@ export const getVehicleById = async (req: Request, res: Response) => {
 export const createVehicle = async (req: Request, res: Response) => {
   try {
     const validated = vehicleSchema.parse(req.body)
-    const { plateNumber, vehicleTypeId, operatorId, seatCapacity, manufactureYear, chassisNumber, engineNumber, color, notes, documents } = validated
+    const { 
+      plateNumber, vehicleTypeId, operatorId, seatCapacity, bedCapacity,
+      chassisNumber, engineNumber, imageUrl,
+      insuranceExpiryDate, inspectionExpiryDate,
+      cargoLength, cargoWidth, cargoHeight,
+      gpsProvider, gpsUsername, gpsPassword,
+      notes, documents 
+    } = validated
 
     // Insert vehicle
     const { data: vehicle, error: vehicleError } = await supabase
@@ -234,12 +279,24 @@ export const createVehicle = async (req: Request, res: Response) => {
       .insert({
         plate_number: plateNumber,
         vehicle_type_id: vehicleTypeId || null,
-        operator_id: operatorId,
+        operator_id: operatorId || null,
         seat_capacity: seatCapacity,
-        manufacture_year: manufactureYear || null,
+        bed_capacity: bedCapacity || 0,
         chassis_number: chassisNumber || null,
         engine_number: engineNumber || null,
-        color: color || null,
+        image_url: imageUrl || null,
+        
+        insurance_expiry_date: insuranceExpiryDate || null,
+        inspection_expiry_date: inspectionExpiryDate || null,
+        
+        cargo_length: cargoLength || null,
+        cargo_width: cargoWidth || null,
+        cargo_height: cargoHeight || null,
+        
+        gps_provider: gpsProvider || null,
+        gps_username: gpsUsername || null,
+        gps_password: gpsPassword || null,
+
         notes: notes || null,
         is_active: true,
       })
@@ -312,10 +369,21 @@ export const createVehicle = async (req: Request, res: Response) => {
         code: (vehicle as any).operators.code,
       } : undefined,
       seatCapacity: vehicle.seat_capacity,
-      manufactureYear: vehicle.manufacture_year,
+      bedCapacity: vehicle.bed_capacity,
       chassisNumber: vehicle.chassis_number,
       engineNumber: vehicle.engine_number,
-      color: vehicle.color,
+      
+      insuranceExpiryDate: vehicle.insurance_expiry_date,
+      inspectionExpiryDate: vehicle.inspection_expiry_date,
+      
+      cargoLength: vehicle.cargo_length,
+      cargoWidth: vehicle.cargo_width,
+      cargoHeight: vehicle.cargo_height,
+      
+      gpsProvider: vehicle.gps_provider,
+      gpsUsername: vehicle.gps_username,
+      gpsPassword: vehicle.gps_password,
+
       isActive: vehicle.is_active,
       notes: vehicle.notes,
       documents: {
@@ -350,10 +418,22 @@ export const updateVehicle = async (req: Request, res: Response) => {
     if (validated.vehicleTypeId !== undefined) updateData.vehicle_type_id = validated.vehicleTypeId || null
     if (validated.operatorId) updateData.operator_id = validated.operatorId
     if (validated.seatCapacity) updateData.seat_capacity = validated.seatCapacity
-    if (validated.manufactureYear !== undefined) updateData.manufacture_year = validated.manufactureYear || null
+    if (validated.bedCapacity !== undefined) updateData.bed_capacity = validated.bedCapacity || 0
     if (validated.chassisNumber !== undefined) updateData.chassis_number = validated.chassisNumber || null
     if (validated.engineNumber !== undefined) updateData.engine_number = validated.engineNumber || null
-    if (validated.color !== undefined) updateData.color = validated.color || null
+    if (validated.imageUrl !== undefined) updateData.image_url = validated.imageUrl || null
+    
+    if (validated.insuranceExpiryDate !== undefined) updateData.insurance_expiry_date = validated.insuranceExpiryDate || null
+    if (validated.inspectionExpiryDate !== undefined) updateData.inspection_expiry_date = validated.inspectionExpiryDate || null
+    
+    if (validated.cargoLength !== undefined) updateData.cargo_length = validated.cargoLength || null
+    if (validated.cargoWidth !== undefined) updateData.cargo_width = validated.cargoWidth || null
+    if (validated.cargoHeight !== undefined) updateData.cargo_height = validated.cargoHeight || null
+    
+    if (validated.gpsProvider !== undefined) updateData.gps_provider = validated.gpsProvider || null
+    if (validated.gpsUsername !== undefined) updateData.gps_username = validated.gpsUsername || null
+    if (validated.gpsPassword !== undefined) updateData.gps_password = validated.gpsPassword || null
+
     if (validated.notes !== undefined) updateData.notes = validated.notes || null
 
     if (Object.keys(updateData).length > 0) {
@@ -463,10 +543,24 @@ export const updateVehicle = async (req: Request, res: Response) => {
         code: (vehicle as any).operators.code,
       } : undefined,
       seatCapacity: vehicle.seat_capacity,
+      bedCapacity: vehicle.bed_capacity,
       manufactureYear: vehicle.manufacture_year,
       chassisNumber: vehicle.chassis_number,
       engineNumber: vehicle.engine_number,
       color: vehicle.color,
+      imageUrl: vehicle.image_url,
+      
+      insuranceExpiryDate: vehicle.insurance_expiry_date,
+      inspectionExpiryDate: vehicle.inspection_expiry_date,
+      
+      cargoLength: vehicle.cargo_length,
+      cargoWidth: vehicle.cargo_width,
+      cargoHeight: vehicle.cargo_height,
+      
+      gpsProvider: vehicle.gps_provider,
+      gpsUsername: vehicle.gps_username,
+      gpsPassword: vehicle.gps_password,
+
       isActive: vehicle.is_active,
       notes: vehicle.notes,
       documents: {

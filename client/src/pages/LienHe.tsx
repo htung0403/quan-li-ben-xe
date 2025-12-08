@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { toast } from "react-toastify"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
@@ -6,7 +7,7 @@ import { Label } from "@/components/ui/label"
 import { Card, CardContent } from "@/components/ui/card"
 import { Phone, Mail, Clock, MapPin } from "lucide-react"
 
-export default function Contact() {
+export default function LienHe() {
     const [formData, setFormData] = useState({
         name: "",
         phone: "",
@@ -29,7 +30,7 @@ export default function Contact() {
         e.preventDefault()
         // TODO: Implement form submission
         console.log("Form submitted:", formData)
-        alert("Cảm ơn bạn đã liên hệ! Chúng tôi sẽ phản hồi sớm nhất có thể.")
+        toast.success("Cảm ơn bạn đã liên hệ! Chúng tôi sẽ phản hồi sớm nhất có thể.")
         setFormData({
             name: "",
             phone: "",

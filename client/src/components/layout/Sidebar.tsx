@@ -1,42 +1,48 @@
-import { Link, useLocation } from "react-router-dom"
+import { Link, useLocation } from "react-router-dom";
 import {
   Home,
   LayoutDashboard,
   CalendarClock,
   Bus,
   Users,
+  Route,
   BarChart3,
+  CreditCard,
+  Building2,
   // Settings,
   LogOut,
-} from "lucide-react"
-import { cn } from "@/lib/utils"
-import { useAuthStore } from "@/store/auth.store"
-import { Button } from "@/components/ui/button"
-import logo from "@/assets/logo.png"
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { useAuthStore } from "@/store/auth.store";
+import { Button } from "@/components/ui/button";
+import logo from "@/assets/logo.png";
 
 const navigation = [
   { name: "Trang chủ", href: "/", icon: Home },
   { name: "Tổng quan", href: "/dashboard", icon: LayoutDashboard },
-  { name: "Điều độ xe", href: "/dispatch", icon: CalendarClock },
-  { name: "Quản lý xe", href: "/vehicles", icon: Bus },
-  { name: "Quản lý lái xe", href: "/drivers", icon: Users },
-  { name: "Báo cáo", href: "/reports", icon: BarChart3 },
+  { name: "Điều độ xe", href: "/dieu-do", icon: CalendarClock },
+  { name: "Thanh toán", href: "/thanh-toan", icon: CreditCard },
+  { name: "Quản lý xe", href: "/quan-ly-xe", icon: Bus },
+  { name: "Quản lý lái xe", href: "/quan-ly-lai-xe", icon: Users },
+  { name: "Đơn vị vận tải", href: "/quan-ly-don-vi-van-tai", icon: Building2 },
+  { name: "Quản lý tuyến", href: "/quan-ly-tuyen", icon: Route },
+  { name: "Báo cáo", href: "/bao-cao", icon: BarChart3 },
   // { name: "Cài đặt", href: "/settings", icon: Settings },
-]
+];
 
 interface SidebarProps {
-  isOpen: boolean
-  onClose: () => void
+  isOpen: boolean;
+  onClose: () => void;
 }
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
-  const location = useLocation()
-  const logout = useAuthStore((state) => state.logout)
+  const location = useLocation();
+  const logout = useAuthStore((state) => state.logout);
 
   const handleLogout = () => {
-    logout()
-    window.location.href = "/login"
-  }
+    logout();
+    window.location.href = "/login";
+  };
 
   return (
     <>
@@ -58,13 +64,17 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         <div className="flex h-full flex-col">
           {/* Logo */}
           <div className="flex items-center justify-center border-b border-indigo-200/50 px-6 py-4">
-            <img src={logo} alt="Quản Lý Bến Xe" className="h-28 w-auto object-fit drop-shadow-lg" />
+            <img
+              src={logo}
+              alt="Quản Lý Bến Xe"
+              className="h-28 w-auto object-fit drop-shadow-lg"
+            />
           </div>
 
           {/* Navigation */}
           <nav className="flex-1 space-y-2 px-3 py-4">
             {navigation.map((item) => {
-              const isActive = location.pathname === item.href
+              const isActive = location.pathname === item.href;
               return (
                 <Link
                   key={item.name}
@@ -77,13 +87,15 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                       : "text-gray-700 hover:bg-gradient-to-r hover:from-blue-100 hover:to-indigo-100 hover:text-indigo-700 hover:shadow-sm"
                   )}
                 >
-                  <item.icon className={cn(
-                    "h-6 w-6 transition-colors",
-                    isActive ? "text-white" : "text-indigo-600"
-                  )} />
+                  <item.icon
+                    className={cn(
+                      "h-6 w-6 transition-colors",
+                      isActive ? "text-white" : "text-indigo-600"
+                    )}
+                  />
                   {item.name}
                 </Link>
-              )
+              );
             })}
           </nav>
 
@@ -101,6 +113,5 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         </div>
       </aside>
     </>
-  )
+  );
 }
-

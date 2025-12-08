@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { toast } from "react-toastify"
 import { Search, ChevronDown, ChevronUp } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -18,7 +19,7 @@ interface RejectionReason {
   categoryName: string
 }
 
-interface NotEligibleReasonDialogProps {
+interface LyDoKhongDuDieuKienDialogProps {
   open: boolean
   onClose: () => void
   onConfirm: (selectedReasons: string[], options: {
@@ -67,11 +68,11 @@ const rejectionReasons: RejectionReason[] = [
   }
 ]
 
-export function NotEligibleReasonDialog({
+export function LyDoKhongDuDieuKienDialog({
   open,
   onClose,
   onConfirm
-}: NotEligibleReasonDialogProps) {
+}: LyDoKhongDuDieuKienDialogProps) {
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedReasons, setSelectedReasons] = useState<string[]>([])
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set(["driver"]))
@@ -121,7 +122,7 @@ export function NotEligibleReasonDialog({
 
   const handleConfirm = () => {
     if (selectedReasons.length === 0) {
-      alert("Vui lòng chọn ít nhất một lý do")
+      toast.warning("Vui lòng chọn ít nhất một lý do")
       return
     }
     onConfirm(selectedReasons, {

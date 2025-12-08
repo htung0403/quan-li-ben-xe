@@ -9,6 +9,13 @@ const routeSchema = z.object({
   destinationId: z.string().uuid('Invalid destination ID'),
   distanceKm: z.number().positive().optional(),
   estimatedDurationMinutes: z.number().int().positive().optional(),
+  
+  plannedFrequency: z.string().optional(),
+  boardingPoint: z.string().optional(),
+  journeyDescription: z.string().optional(),
+  departureTimesDescription: z.string().optional(),
+  restStops: z.string().optional(),
+  
   stops: z.array(z.object({
     locationId: z.string().uuid(),
     stopOrder: z.number().int().positive(),
@@ -72,6 +79,13 @@ export const getAllRoutes = async (req: Request, res: Response) => {
         } : undefined,
         distanceKm: route.distance_km ? parseFloat(route.distance_km) : null,
         estimatedDurationMinutes: route.estimated_duration_minutes,
+        
+        plannedFrequency: route.planned_frequency,
+        boardingPoint: route.boarding_point,
+        journeyDescription: route.journey_description,
+        departureTimesDescription: route.departure_times_description,
+        restStops: route.rest_stops,
+        
         isActive: route.is_active,
         stops: routeStops.map((stop: any) => ({
           id: stop.id,
@@ -165,7 +179,11 @@ export const getRouteById = async (req: Request, res: Response) => {
 export const createRoute = async (req: Request, res: Response) => {
   try {
     const validated = routeSchema.parse(req.body)
-    const { routeCode, routeName, originId, destinationId, distanceKm, estimatedDurationMinutes, stops } = validated
+    const { 
+      routeCode, routeName, originId, destinationId, distanceKm, estimatedDurationMinutes, 
+      plannedFrequency, boardingPoint, journeyDescription, departureTimesDescription, restStops,
+      stops 
+    } = validated
 
     // Insert route
     const { data: route, error: routeError } = await supabase
@@ -177,6 +195,13 @@ export const createRoute = async (req: Request, res: Response) => {
         destination_id: destinationId,
         distance_km: distanceKm || null,
         estimated_duration_minutes: estimatedDurationMinutes || null,
+        
+        planned_frequency: plannedFrequency || null,
+        boarding_point: boardingPoint || null,
+        journey_description: journeyDescription || null,
+        departure_times_description: departureTimesDescription || null,
+        rest_stops: restStops || null,
+        
         is_active: true,
       })
       .select(`
@@ -230,6 +255,13 @@ export const createRoute = async (req: Request, res: Response) => {
       } : undefined,
       distanceKm: route.distance_km ? parseFloat(route.distance_km) : null,
       estimatedDurationMinutes: route.estimated_duration_minutes,
+      
+      plannedFrequency: route.planned_frequency,
+      boardingPoint: route.boarding_point,
+      journeyDescription: route.journey_description,
+      departureTimesDescription: route.departure_times_description,
+      restStops: route.rest_stops,
+      
       isActive: route.is_active,
       stops: routeStops?.map((stop: any) => ({
         id: stop.id,
@@ -266,6 +298,12 @@ export const updateRoute = async (req: Request, res: Response) => {
     if (validated.destinationId) updateData.destination_id = validated.destinationId
     if (validated.distanceKm !== undefined) updateData.distance_km = validated.distanceKm || null
     if (validated.estimatedDurationMinutes !== undefined) updateData.estimated_duration_minutes = validated.estimatedDurationMinutes || null
+    
+    if (validated.plannedFrequency !== undefined) updateData.planned_frequency = validated.plannedFrequency || null
+    if (validated.boardingPoint !== undefined) updateData.boarding_point = validated.boardingPoint || null
+    if (validated.journeyDescription !== undefined) updateData.journey_description = validated.journeyDescription || null
+    if (validated.departureTimesDescription !== undefined) updateData.departure_times_description = validated.departureTimesDescription || null
+    if (validated.restStops !== undefined) updateData.rest_stops = validated.restStops || null
 
     if (Object.keys(updateData).length > 0) {
       const { error: routeError } = await supabase

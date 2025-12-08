@@ -2,13 +2,22 @@ import { Request, Response } from 'express'
 import { supabase } from '../config/database.js'
 import { z } from 'zod'
 import { AuthRequest } from '../middleware/auth.js'
+import { getCurrentVietnamTime, convertVietnamISOToUTCForStorage } from '../utils/timezone.js'
 
 const dispatchSchema = z.object({
   vehicleId: z.string().uuid('Invalid vehicle ID'),
   driverId: z.string().uuid('Invalid driver ID'),
   scheduleId: z.string().uuid().optional(),
-  routeId: z.string().uuid('Invalid route ID'),
-  entryTime: z.string().datetime('Invalid entry time'),
+  routeId: z.string().uuid('Invalid route ID').optional(),
+  entryTime: z.string().refine(
+    (val) => {
+      // Accept ISO 8601 format with or without timezone
+      // Examples: "2024-12-25T14:30:00+07:00" or "2024-12-25T14:30:00Z" or "2024-12-25T14:30:00"
+      const date = new Date(val)
+      return !isNaN(date.getTime())
+    },
+    { message: 'Invalid entry time format' }
+  ),
   notes: z.string().optional(),
 })
 
@@ -41,7 +50,8 @@ export const getAllDispatchRecords = async (req: Request, res: Response) => {
     // Fetch related data
     const vehicleIds = [...new Set(records.map((r: any) => r.vehicle_id))]
     const driverIds = [...new Set(records.map((r: any) => r.driver_id))]
-    const routeIds = [...new Set(records.map((r: any) => r.route_id))]
+    const routeIds = [...new Set(records.map((r: any) => r.route_id).filter((id: any) => id !== null))]
+    const userIds = [...new Set(records.map((r: any) => r.entry_by).filter((id: any) => id !== null))]
 
     const { data: vehicles } = await supabase
       .from('vehicles')
@@ -53,14 +63,20 @@ export const getAllDispatchRecords = async (req: Request, res: Response) => {
       .select('id, full_name')
       .in('id', driverIds)
 
-    const { data: routes } = await supabase
+    const { data: routes } = routeIds.length > 0 ? await supabase
       .from('routes')
       .select('id, route_name')
-      .in('id', routeIds)
+      .in('id', routeIds) : { data: [] }
+
+    const { data: users } = userIds.length > 0 ? await supabase
+      .from('users')
+      .select('id, full_name')
+      .in('id', userIds) : { data: [] }
 
     const vehicleMap = new Map(vehicles?.map((v: any) => [v.id, v.plate_number]) || [])
     const driverMap = new Map(drivers?.map((d: any) => [d.id, d.full_name]) || [])
     const routeMap = new Map(routes?.map((r: any) => [r.id, r.route_name]) || [])
+    const userMap = new Map(users?.map((u: any) => [u.id, u.full_name]) || [])
 
     const result = records.map((record: any) => ({
       id: record.id,
@@ -72,7 +88,7 @@ export const getAllDispatchRecords = async (req: Request, res: Response) => {
       routeId: record.route_id,
       routeName: routeMap.get(record.route_id) || '',
       entryTime: record.entry_time,
-      entryBy: record.entry_by,
+      entryBy: userMap.get(record.entry_by) || record.entry_by,
       passengerDropTime: record.passenger_drop_time,
       passengersArrived: record.passengers_arrived,
       passengerDropBy: record.passenger_drop_by,
@@ -135,11 +151,16 @@ export const getDispatchRecordById = async (req: Request, res: Response) => {
       .eq('id', record.driver_id)
       .single()
 
-    const { data: route } = await supabase
-      .from('routes')
-      .select('id, route_name')
-      .eq('id', record.route_id)
-      .single()
+    // Fetch route only if route_id exists
+    let route = null
+    if (record.route_id) {
+      const { data: routeData } = await supabase
+        .from('routes')
+        .select('id, route_name')
+        .eq('id', record.route_id)
+        .single()
+      route = routeData
+    }
 
     return res.json({
       id: record.id,
@@ -190,14 +211,19 @@ export const createDispatchRecord = async (req: AuthRequest, res: Response) => {
     const { vehicleId, driverId, scheduleId, routeId, entryTime, notes } = validated
     const userId = req.user?.id
 
+    // Frontend sends ISO string with +07:00 (Vietnam time)
+    // Convert to UTC ISO string for database storage, but preserve Vietnam time value
+    // by storing UTC time that represents Vietnam time (UTC+7)
+    const entryTimeForDB = convertVietnamISOToUTCForStorage(entryTime)
+
     const { data, error } = await supabase
       .from('dispatch_records')
       .insert({
         vehicle_id: vehicleId,
         driver_id: driverId,
         schedule_id: scheduleId || null,
-        route_id: routeId,
-        entry_time: entryTime,
+        route_id: routeId || null,
+        entry_time: entryTimeForDB,
         entry_by: userId || null,
         current_status: 'entered',
         notes: notes || null,
@@ -220,11 +246,16 @@ export const createDispatchRecord = async (req: AuthRequest, res: Response) => {
       .eq('id', data.driver_id)
       .single()
 
-    const { data: route } = await supabase
-      .from('routes')
-      .select('id, route_name')
-      .eq('id', data.route_id)
-      .single()
+    // Fetch route only if route_id exists
+    let route = null
+    if (data.route_id) {
+      const { data: routeData } = await supabase
+        .from('routes')
+        .select('id, route_name')
+        .eq('id', data.route_id)
+        .single()
+      route = routeData
+    }
 
     return res.status(201).json({
       id: data.id,
@@ -255,17 +286,25 @@ export const createDispatchRecord = async (req: AuthRequest, res: Response) => {
 export const recordPassengerDrop = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params
-    const { passengersArrived } = req.body
+    const { passengersArrived, routeId } = req.body
     const userId = req.user?.id
+
+    // Build update object
+    const updateData: any = {
+      passenger_drop_time: getCurrentVietnamTime(),
+      passengers_arrived: passengersArrived || null,
+      passenger_drop_by: userId || null,
+      current_status: 'passengers_dropped',
+    }
+
+    // Set routeId if provided and not already set
+    if (routeId) {
+      updateData.route_id = routeId
+    }
 
     const { data, error } = await supabase
       .from('dispatch_records')
-      .update({
-        passenger_drop_time: new Date().toISOString(),
-        passengers_arrived: passengersArrived || null,
-        passenger_drop_by: userId || null,
-        current_status: 'passengers_dropped',
-      })
+      .update(updateData)
       .eq('id', id)
       .select('*')
       .single()
@@ -286,7 +325,7 @@ export const recordPassengerDrop = async (req: AuthRequest, res: Response) => {
 export const issuePermit = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params
-    const { transportOrderCode, plannedDepartureTime, seatCount, permitStatus, rejectionReason } = req.body
+    const { transportOrderCode, plannedDepartureTime, seatCount, permitStatus, rejectionReason, routeId, scheduleId } = req.body
     const userId = req.user?.id
 
     if (!transportOrderCode && permitStatus !== 'rejected') {
@@ -294,9 +333,19 @@ export const issuePermit = async (req: AuthRequest, res: Response) => {
     }
 
     const updateData: any = {
-      boarding_permit_time: new Date().toISOString(),
+      boarding_permit_time: getCurrentVietnamTime(),
       boarding_permit_by: userId || null,
       permit_status: permitStatus || 'approved',
+    }
+
+    // Set routeId if provided
+    if (routeId) {
+      updateData.route_id = routeId
+    }
+
+    // Set scheduleId if provided
+    if (scheduleId) {
+      updateData.schedule_id = scheduleId
     }
 
     if (permitStatus === 'approved') {
@@ -304,8 +353,11 @@ export const issuePermit = async (req: AuthRequest, res: Response) => {
       updateData.planned_departure_time = plannedDepartureTime
       updateData.seat_count = seatCount
       updateData.current_status = 'permit_issued'
-      updateData.rejection_reason = null
+      updateData.rejection_reason = rejectionReason || null
     } else if (permitStatus === 'rejected') {
+      updateData.transport_order_code = transportOrderCode || null
+      updateData.planned_departure_time = plannedDepartureTime || null
+      updateData.seat_count = seatCount || null
       updateData.current_status = 'permit_rejected'
       updateData.rejection_reason = rejectionReason || null
     }
@@ -343,7 +395,7 @@ export const processPayment = async (req: AuthRequest, res: Response) => {
     const { data, error } = await supabase
       .from('dispatch_records')
       .update({
-        payment_time: new Date().toISOString(),
+        payment_time: getCurrentVietnamTime(),
         payment_amount: paymentAmount,
         payment_method: paymentMethod || 'cash',
         invoice_number: invoiceNumber || null,
@@ -376,7 +428,7 @@ export const issueDepartureOrder = async (req: AuthRequest, res: Response) => {
     const { data, error } = await supabase
       .from('dispatch_records')
       .update({
-        departure_order_time: new Date().toISOString(),
+        departure_order_time: getCurrentVietnamTime(),
         passengers_departing: passengersDeparting || null,
         departure_order_by: userId || null,
         current_status: 'departure_ordered',
@@ -401,15 +453,22 @@ export const issueDepartureOrder = async (req: AuthRequest, res: Response) => {
 export const recordExit = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params
+    const { exitTime, passengersDeparting } = req.body
     const userId = req.user?.id
+
+    const updateData: any = {
+      exit_time: exitTime ? convertVietnamISOToUTCForStorage(exitTime) : getCurrentVietnamTime(),
+      exit_by: userId || null,
+      current_status: 'departed',
+    }
+
+    if (passengersDeparting !== undefined) {
+      updateData.passengers_departing = passengersDeparting
+    }
 
     const { data, error } = await supabase
       .from('dispatch_records')
-      .update({
-        exit_time: new Date().toISOString(),
-        exit_by: userId || null,
-        current_status: 'departed',
-      })
+      .update(updateData)
       .eq('id', id)
       .select('*')
       .single()

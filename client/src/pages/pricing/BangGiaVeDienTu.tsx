@@ -1,84 +1,83 @@
 import { Link } from "react-router-dom"
 import { CheckCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent, CardHeader } from "@/components/ui/card"
 
-export default function IcorpSignaturePricing() {
+export default function BangGiaVeDienTu() {
   return (
     <div className="w-full bg-gray-50 py-6 lg:py-10">
       <div className="container mx-auto px-4">
         {/* Header */}
         <div className="text-center mb-6">
           <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-2">
-            BẢNG GIÁ CHỮ KÝ SỐ HSM KÝ LỆNH VÀ VÉ ĐIỆN TỬ
+            BẢNG GIÁ SẢN PHẨM VÉ ĐIỆN TỬ
           </h1>
         </div>
 
         {/* Pricing Card */}
         <div className="max-w-5xl mx-auto">
-          <Card className="border-2 border-purple-200 shadow-xl">
-            {/* Package Header */}
-            <div className="bg-gray-100 py-3 px-4 border-b border-gray-200">
-              <h2 className="text-xl lg:text-2xl font-bold text-gray-900 text-center">
-                GÓI HỢP TÁC ĐẶC BIỆT HILO - CA
-              </h2>
-            </div>
-            
+          <Card className="border-2 border-teal-200 shadow-xl">
+            <CardHeader className="bg-gradient-to-r from-teal-500 to-teal-600 text-white pb-4">
+              <div className="text-center">
+                <h2 className="text-3xl lg:text-4xl font-bold mb-2">V-MAX</h2>
+              </div>
+            </CardHeader>
             <CardContent className="p-6">
+              {/* Promotion Banner */}
+              <div className="bg-red-500 text-white text-center py-2 px-4 rounded-lg mb-4">
+                <p className="font-semibold text-sm lg:text-base">
+                  Khuyến mãi đặc biệt +03 tháng sử dụng miễn phí cho các đơn vị đăng ký trước 01/08/2022
+                </p>
+              </div>
+
               {/* Price */}
               <div className="text-center mb-6">
                 <div className="flex items-baseline justify-center gap-2 mb-2">
-                  <span className="text-5xl lg:text-6xl font-bold text-purple-600">500.000</span>
-                  <span className="text-2xl text-gray-600">đ</span>
+                  <span className="text-5xl lg:text-6xl font-bold text-teal-600">300.000</span>
+                  <span className="text-2xl font-bold text-gray-600">Đồng/xe/năm</span>
                 </div>
-                <p className="text-lg text-gray-600">/đơn vị sử dụng</p>
+                <p className="text-base text-gray-500 italic">Gói không giới hạn số lượng sử dụng theo năm</p>
               </div>
 
               {/* Features */}
               <div className="border-t border-gray-200 pt-6 mb-6">
-                <ul className="space-y-4">
-                  <li className="flex items-start gap-3 pb-3 border-b border-gray-100">
+                <ul className="space-y-3">
+                  <li className="flex items-start gap-3">
                     <CheckCircle className="h-6 w-6 text-green-600 mt-0.5 flex-shrink-0" />
                     <span className="text-gray-700 text-base">
-                      Chứng thư số server lưu khóa trên thiết bị HSM tốc độ ký cao
-                    </span>
-                  </li>
-                  <li className="flex items-start gap-3 pb-3 border-b border-gray-100">
-                    <CheckCircle className="h-6 w-6 text-green-600 mt-0.5 flex-shrink-0" />
-                    <span className="text-gray-700 text-base">
-                      <span className="font-bold text-lg">Không giới hạn</span> số lượng lượt ký cho Lệnh vận chuyển điện, vé xe điện tử trên hệ thống của Sơn Phát trong 01 năm
-                    </span>
-                  </li>
-                  <li className="flex items-start gap-3 pb-3 border-b border-gray-100">
-                    <CheckCircle className="h-6 w-6 text-green-600 mt-0.5 flex-shrink-0" />
-                    <span className="text-gray-700 text-base">
-                      <span className="font-bold text-lg">Tích hợp sẵn</span> để ký Lệnh vận chuyển điện tử và Vé xe khách điện tử
+                      <span className="font-bold text-lg">Miễn phí</span> phần mềm bán vé và quản lý
                     </span>
                   </li>
                   <li className="flex items-start gap-3">
                     <CheckCircle className="h-6 w-6 text-green-600 mt-0.5 flex-shrink-0" />
                     <span className="text-gray-700 text-base">
-                      <span className="font-bold text-lg">Miễn phí</span> sử dụng thử phần mềm Hợp đồng điện tử Hilo - Econtract
+                      Lưu trữ dữ liệu <span className="font-bold text-lg">10 năm</span> theo quy định
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle className="h-6 w-6 text-green-600 mt-0.5 flex-shrink-0" />
+                    <span className="text-gray-700 text-base">
+                      Thời gian sử dụng không giới hạn
+                    </span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <CheckCircle className="h-6 w-6 text-green-600 mt-0.5 flex-shrink-0" />
+                    <span className="text-gray-700 text-base">
+                      Số lượng vé sử dụng không giới hạn
                     </span>
                   </li>
                 </ul>
               </div>
 
-              {/* Info Text */}
-              <div className="text-center mb-6">
-                <p className="text-gray-700 text-base">
-                  Cài đặt ngay để sử dụng cùng giải pháp Lệnh và Vé điện tử.
-                </p>
-              </div>
-
               {/* CTA Button */}
               <div className="text-center">
-                <Link to="/contact">
-                  <Button 
-                    size="lg" 
-                    className="bg-teal-500 hover:bg-teal-600 text-white px-8 py-4 text-lg rounded-lg shadow-lg transition-all hover:shadow-xl"
+                <p className="text-gray-600 text-sm italic mb-4">Trọn bộ giải pháp cung cấp theo năm</p>
+                <Link to="/lien-he">
+                  <Button
+                    size="lg"
+                    className="bg-green-600 hover:bg-green-700 text-white px-8 py-4 text-lg rounded-lg shadow-lg transition-all hover:shadow-xl"
                   >
-                    Liên hệ đăng ký
+                    Liên hệ tư vấn ngay
                   </Button>
                 </Link>
               </div>

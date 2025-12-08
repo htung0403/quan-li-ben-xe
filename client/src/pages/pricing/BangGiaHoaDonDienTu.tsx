@@ -3,7 +3,7 @@ import { Monitor, Heart, PenTool, Gift } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 
-export default function IcorpInvoicePricing() {
+export default function BangGiaHoaDonDienTu() {
   const features = [
     {
       icon: Monitor,
@@ -72,7 +72,7 @@ export default function IcorpInvoicePricing() {
 
           {/* CTA Button */}
           <div className="text-center">
-            <Link to="/contact">
+            <Link to="/lien-he">
               <Button 
                 size="lg" 
                 className="bg-teal-500 hover:bg-teal-600 text-white px-8 py-4 text-lg rounded-lg shadow-lg transition-all hover:shadow-xl"
