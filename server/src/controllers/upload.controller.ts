@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import cloudinary from '../config/cloudinary.js';
 import fs from 'fs';
 
-export const uploadImage = async (req: Request, res: Response) => {
+export const uploadImage = async (req: Request, res: Response): Promise<Response> => {
   try {
     if (!req.file) {
       return res.status(400).json({ message: 'No file uploaded' });
@@ -18,7 +18,7 @@ export const uploadImage = async (req: Request, res: Response) => {
     // Remove file from local uploads folder
     fs.unlinkSync(req.file.path);
 
-    res.status(200).json({
+    return res.status(200).json({
       url: result.secure_url,
       public_id: result.public_id,
     });
@@ -28,6 +28,6 @@ export const uploadImage = async (req: Request, res: Response) => {
     if (req.file && fs.existsSync(req.file.path)) {
       fs.unlinkSync(req.file.path);
     }
-    res.status(500).json({ message: 'Image upload failed', error });
+    return res.status(500).json({ message: 'Image upload failed', error });
   }
 };
