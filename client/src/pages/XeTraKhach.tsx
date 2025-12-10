@@ -216,6 +216,13 @@ export default function XeTraKhach() {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
+            <DatePickerRange
+              range={dateRange}
+              onRangeChange={setDateRange}
+              placeholder="Chọn khoảng thời gian"
+              label=""
+              className="w-full space-y-0"
+            />
             <div className="space-y-0">
               <Select
                 id="operator"
@@ -230,13 +237,6 @@ export default function XeTraKhach() {
                 ))}
               </Select>
             </div>
-            <DatePickerRange
-              range={dateRange}
-              onRangeChange={setDateRange}
-              placeholder="Chọn khoảng thời gian"
-              label=""
-              className="w-full space-y-0"
-            />
           </div>
 
           <div className="border rounded-lg overflow-auto">
