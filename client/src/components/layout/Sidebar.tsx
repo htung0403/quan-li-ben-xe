@@ -1,4 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
+import { useState } from "react";
 import {
   Home,
   LayoutDashboard,
@@ -11,6 +12,11 @@ import {
   Building2,
   // Settings,
   LogOut,
+  ChevronDown,
+  ChevronUp,
+  FastForward,
+  OctagonX,
+  Link2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/auth.store";
@@ -38,11 +44,18 @@ interface SidebarProps {
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const location = useLocation();
   const logout = useAuthStore((state) => state.logout);
+  const [isTruyenTaiOpen, setIsTruyenTaiOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
     window.location.href = "/login";
   };
+
+  const truyenTaiSubmenu = [
+    { name: "Xe xuất bến", href: "/truyen-tai/xe-xuat-ben", icon: FastForward, flip: false },
+    { name: "Xe không đủ điều kiện", href: "/truyen-tai/xe-khong-du-dieu-kien", icon: OctagonX, flip: false },
+    { name: "Xe trả khách", href: "/truyen-tai/xe-tra-khach", icon: FastForward, flip: true },
+  ];
 
   return (
     <>
@@ -72,7 +85,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 space-y-2 px-3 py-4">
+          <nav className="flex-1 space-y-2 px-3 py-4 overflow-y-auto">
             {navigation.map((item) => {
               const isActive = location.pathname === item.href;
               return (
@@ -97,6 +110,58 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                 </Link>
               );
             })}
+
+            {/* Truyền tải Menu */}
+            <div className="mt-2">
+              <button
+                onClick={() => setIsTruyenTaiOpen(!isTruyenTaiOpen)}
+                className={cn(
+                  "w-full flex items-center justify-between gap-3 rounded-lg px-3 py-2.5 text-base font-medium transition-all duration-200",
+                  "text-gray-700 hover:bg-gradient-to-r hover:from-blue-100 hover:to-indigo-100 hover:text-indigo-700 hover:shadow-sm"
+                )}
+              >
+                <div className="flex items-center gap-3">
+                  <Link2 className="h-6 w-6 text-indigo-600" />
+                  <span>Truyền tải</span>
+                </div>
+                {isTruyenTaiOpen ? (
+                  <ChevronUp className="h-5 w-5 text-gray-500" />
+                ) : (
+                  <ChevronDown className="h-5 w-5 text-gray-500" />
+                )}
+              </button>
+
+              {/* Submenu */}
+              {isTruyenTaiOpen && (
+                <div className="ml-4 mt-2 space-y-1 border-l-2 border-indigo-200 pl-4">
+                  {truyenTaiSubmenu.map((subItem) => {
+                    const isSubActive = location.pathname === subItem.href;
+                    return (
+                      <Link
+                        key={subItem.name}
+                        to={subItem.href}
+                        onClick={onClose}
+                        className={cn(
+                          "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200",
+                          isSubActive
+                            ? "bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-md shadow-blue-500/30"
+                            : "text-gray-600 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 hover:text-indigo-700"
+                        )}
+                      >
+                        <subItem.icon
+                          className={cn(
+                            "h-5 w-5 transition-colors",
+                            isSubActive ? "text-white" : "text-indigo-500",
+                            subItem.flip && "scale-x-[-1]"
+                          )}
+                        />
+                        {subItem.name}
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
           </nav>
 
           {/* Logout button */}

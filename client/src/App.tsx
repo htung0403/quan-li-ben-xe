@@ -11,6 +11,7 @@ import HomePage from "@/pages/HomePage"
 import Dashboard from "@/pages/Dashboard"
 import DieuDo from "@/pages/DieuDo"
 import ThanhToan from "@/pages/ThanhToan"
+import TaoMoiDonHang from "@/pages/TaoMoiDonHang"
 import QuanLyXe from "@/pages/QuanLyXe"
 import QuanLyLaiXe from "@/pages/QuanLyLaiXe"
 import QuanLyDonViVanTai from "@/pages/QuanLyDonViVanTai"
@@ -23,6 +24,9 @@ import BangGiaChuKySo from "@/pages/pricing/BangGiaChuKySo"
 import BangGiaHoaDonDienTu from "@/pages/pricing/BangGiaHoaDonDienTu"
 import HuongDanBanVeUyThac from "@/pages/guide/HuongDanBanVeUyThac"
 import LienHe from "@/pages/LienHe"
+import XeXuatBen from "@/pages/XeXuatBen"
+import XeTraKhach from "@/pages/XeTraKhach"
+import XeKhongDuDieuKien from "@/pages/XeKhongDuDieuKien"
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading, checkAuth } = useAuthStore()
@@ -115,6 +119,46 @@ function App() {
             <ProtectedRoute>
               <MainLayout>
                 <ThanhToan />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/thanh-toan/tao-moi"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <TaoMoiDonHang />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/truyen-tai/xe-xuat-ben"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <XeXuatBen />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/truyen-tai/xe-tra-khach"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <XeTraKhach />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/truyen-tai/xe-khong-du-dieu-kien"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <XeKhongDuDieuKien />
               </MainLayout>
             </ProtectedRoute>
           }

@@ -51,11 +51,22 @@ export const getAllDispatchRecords = async (req: Request, res: Response) => {
     const vehicleIds = [...new Set(records.map((r: any) => r.vehicle_id))]
     const driverIds = [...new Set(records.map((r: any) => r.driver_id))]
     const routeIds = [...new Set(records.map((r: any) => r.route_id).filter((id: any) => id !== null))]
-    const userIds = [...new Set(records.map((r: any) => r.entry_by).filter((id: any) => id !== null))]
+    const userIds = [...new Set(records.flatMap((r: any) => [
+      r.entry_by,
+      r.payment_by,
+      r.departure_order_by,
+      r.exit_by,
+      r.boarding_permit_by,
+    ]).filter((id: any) => id !== null))]
 
     const { data: vehicles } = await supabase
       .from('vehicles')
-      .select('id, plate_number')
+      .select(`
+        id, 
+        plate_number,
+        operator_id,
+        operators:operator_id(id, name, code)
+      `)
       .in('id', vehicleIds)
 
     const { data: drivers } = await supabase
@@ -74,47 +85,65 @@ export const getAllDispatchRecords = async (req: Request, res: Response) => {
       .in('id', userIds) : { data: [] }
 
     const vehicleMap = new Map(vehicles?.map((v: any) => [v.id, v.plate_number]) || [])
+    const vehicleDataMap = new Map(vehicles?.map((v: any) => {
+      const operatorData = Array.isArray(v.operators) ? v.operators[0] : v.operators
+      const operator = operatorData ? {
+        id: operatorData.id,
+        name: operatorData.name,
+        code: operatorData.code,
+      } : undefined
+      return [v.id, {
+        id: v.id,
+        plateNumber: v.plate_number,
+        operatorId: v.operator_id,
+        operator: operator,
+      }]
+    }) || [])
     const driverMap = new Map(drivers?.map((d: any) => [d.id, d.full_name]) || [])
     const routeMap = new Map(routes?.map((r: any) => [r.id, r.route_name]) || [])
     const userMap = new Map(users?.map((u: any) => [u.id, u.full_name]) || [])
 
-    const result = records.map((record: any) => ({
-      id: record.id,
-      vehicleId: record.vehicle_id,
-      vehiclePlateNumber: vehicleMap.get(record.vehicle_id) || '',
-      driverId: record.driver_id,
-      driverName: driverMap.get(record.driver_id) || '',
-      scheduleId: record.schedule_id,
-      routeId: record.route_id,
-      routeName: routeMap.get(record.route_id) || '',
-      entryTime: record.entry_time,
-      entryBy: userMap.get(record.entry_by) || record.entry_by,
-      passengerDropTime: record.passenger_drop_time,
-      passengersArrived: record.passengers_arrived,
-      passengerDropBy: record.passenger_drop_by,
-      boardingPermitTime: record.boarding_permit_time,
-      plannedDepartureTime: record.planned_departure_time,
-      transportOrderCode: record.transport_order_code,
-      seatCount: record.seat_count,
-      permitStatus: record.permit_status,
-      rejectionReason: record.rejection_reason,
-      boardingPermitBy: record.boarding_permit_by,
-      paymentTime: record.payment_time,
-      paymentAmount: record.payment_amount ? parseFloat(record.payment_amount) : null,
-      paymentMethod: record.payment_method,
-      invoiceNumber: record.invoice_number,
-      paymentBy: record.payment_by,
-      departureOrderTime: record.departure_order_time,
-      passengersDeparting: record.passengers_departing,
-      departureOrderBy: record.departure_order_by,
-      exitTime: record.exit_time,
-      exitBy: record.exit_by,
-      currentStatus: record.current_status,
-      notes: record.notes,
-      metadata: record.metadata,
-      createdAt: record.created_at,
-      updatedAt: record.updated_at,
-    }))
+    const result = records.map((record: any) => {
+      const vehicleData = vehicleDataMap.get(record.vehicle_id)
+      return {
+        id: record.id,
+        vehicleId: record.vehicle_id,
+        vehicle: vehicleData,
+        vehiclePlateNumber: vehicleMap.get(record.vehicle_id) || '',
+        driverId: record.driver_id,
+        driverName: driverMap.get(record.driver_id) || '',
+        scheduleId: record.schedule_id,
+        routeId: record.route_id,
+        routeName: routeMap.get(record.route_id) || '',
+        entryTime: record.entry_time,
+        entryBy: userMap.get(record.entry_by) || record.entry_by,
+        passengerDropTime: record.passenger_drop_time,
+        passengersArrived: record.passengers_arrived,
+        passengerDropBy: record.passenger_drop_by,
+        boardingPermitTime: record.boarding_permit_time,
+        plannedDepartureTime: record.planned_departure_time,
+        transportOrderCode: record.transport_order_code,
+        seatCount: record.seat_count,
+        permitStatus: record.permit_status,
+        rejectionReason: record.rejection_reason,
+        boardingPermitBy: userMap.get(record.boarding_permit_by) || record.boarding_permit_by,
+        paymentTime: record.payment_time,
+        paymentAmount: record.payment_amount ? parseFloat(record.payment_amount) : null,
+        paymentMethod: record.payment_method,
+        invoiceNumber: record.invoice_number,
+        paymentBy: userMap.get(record.payment_by) || record.payment_by,
+        departureOrderTime: record.departure_order_time,
+        passengersDeparting: record.passengers_departing,
+        departureOrderBy: userMap.get(record.departure_order_by) || record.departure_order_by,
+        exitTime: record.exit_time,
+        exitBy: userMap.get(record.exit_by) || record.exit_by,
+        currentStatus: record.current_status,
+        notes: record.notes,
+        metadata: record.metadata,
+        createdAt: record.created_at,
+        updatedAt: record.updated_at,
+      }
+    })
 
     return res.json(result)
   } catch (error) {
@@ -138,10 +167,15 @@ export const getDispatchRecordById = async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Dispatch record not found' })
     }
 
-    // Fetch related data
+    // Fetch related data with operator
     const { data: vehicle } = await supabase
       .from('vehicles')
-      .select('id, plate_number')
+      .select(`
+        id, 
+        plate_number,
+        operator_id,
+        operators:operator_id(id, name, code)
+      `)
       .eq('id', record.vehicle_id)
       .single()
 
@@ -162,9 +196,23 @@ export const getDispatchRecordById = async (req: Request, res: Response) => {
       route = routeData
     }
 
+    // Format operator data
+    const operatorData = Array.isArray(vehicle?.operators) ? vehicle?.operators[0] : vehicle?.operators
+    const operator = operatorData ? {
+      id: operatorData.id,
+      name: operatorData.name,
+      code: operatorData.code,
+    } : undefined
+
     return res.json({
       id: record.id,
       vehicleId: record.vehicle_id,
+      vehicle: vehicle ? {
+        id: vehicle.id,
+        plateNumber: vehicle.plate_number,
+        operatorId: vehicle.operator_id,
+        operator: operator,
+      } : undefined,
       vehiclePlateNumber: vehicle?.plate_number || '',
       driverId: record.driver_id,
       driverName: driver?.full_name || '',
@@ -233,10 +281,15 @@ export const createDispatchRecord = async (req: AuthRequest, res: Response) => {
 
     if (error) throw error
 
-    // Fetch related data
+    // Fetch related data with operator
     const { data: vehicle } = await supabase
       .from('vehicles')
-      .select('id, plate_number')
+      .select(`
+        id, 
+        plate_number,
+        operator_id,
+        operators:operator_id(id, name, code)
+      `)
       .eq('id', data.vehicle_id)
       .single()
 
@@ -257,9 +310,23 @@ export const createDispatchRecord = async (req: AuthRequest, res: Response) => {
       route = routeData
     }
 
+    // Format operator data
+    const operatorData = Array.isArray(vehicle?.operators) ? vehicle?.operators[0] : vehicle?.operators
+    const operator = operatorData ? {
+      id: operatorData.id,
+      name: operatorData.name,
+      code: operatorData.code,
+    } : undefined
+
     return res.status(201).json({
       id: data.id,
       vehicleId: data.vehicle_id,
+      vehicle: vehicle ? {
+        id: vehicle.id,
+        plateNumber: vehicle.plate_number,
+        operatorId: vehicle.operator_id,
+        operator: operator,
+      } : undefined,
       vehiclePlateNumber: vehicle?.plate_number || '',
       driverId: data.driver_id,
       driverName: driver?.full_name || '',
@@ -270,6 +337,7 @@ export const createDispatchRecord = async (req: AuthRequest, res: Response) => {
       entryBy: data.entry_by,
       currentStatus: data.current_status,
       notes: data.notes,
+      metadata: data.metadata,
       createdAt: data.created_at,
       updatedAt: data.updated_at,
     })

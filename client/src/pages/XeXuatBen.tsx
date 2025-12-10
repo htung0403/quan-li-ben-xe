@@ -1,0 +1,247 @@
+import { useEffect, useMemo, useState } from "react";
+import { RefreshCw, Search } from "lucide-react";
+import { type DateRange } from "react-day-picker";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Select } from "@/components/ui/select";
+import { dispatchService } from "@/services/dispatch.service";
+import { operatorService } from "@/services/operator.service";
+import type { DispatchRecord, DispatchStatus, Operator } from "@/types";
+import { useUIStore } from "@/store/ui.store";
+import { formatVietnamDateTime } from "@/lib/vietnam-time";
+import { DatePickerRange } from "@/components/DatePickerRange";
+
+const statusLabelMap: Record<DispatchStatus, string> = {
+  entered: "Đã vào bến",
+  passengers_dropped: "Đã trả khách",
+  permit_issued: "Đã cấp phép",
+  permit_rejected: "Từ chối phép",
+  paid: "Đã thanh toán",
+  departure_ordered: "Đã cấp lệnh",
+  departed: "Đã xuất bến",
+};
+
+export default function XeXuatBen() {
+  const setTitle = useUIStore((state) => state.setTitle);
+  const [records, setRecords] = useState<DispatchRecord[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+  const [operators, setOperators] = useState<Operator[]>([]);
+  const [selectedOperatorId, setSelectedOperatorId] = useState<string>("");
+
+  useEffect(() => {
+    setTitle("Truyền tải > Xe xuất bến");
+    loadRecords();
+    loadOperators();
+  }, [setTitle]);
+
+  const loadRecords = async () => {
+    setIsLoading(true);
+    try {
+      const data = await dispatchService.getAll();
+      // Chỉ lấy các xe đã được cấp lệnh hoặc đã xuất bến
+      const filtered = data.filter((item) =>
+        ["departure_ordered", "departed"].includes(item.currentStatus)
+      );
+      setRecords(filtered);
+    } catch (error) {
+      console.error("Failed to load dispatch records:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loadOperators = async () => {
+    try {
+      const data = await operatorService.getAll(true);
+      setOperators(data);
+    } catch (error) {
+      console.error("Failed to load operators:", error);
+    }
+  };
+
+  const filteredRecords = useMemo(() => {
+    return records.filter((item) => {
+      // Full text search - search in both plate number and route name
+      let matchesSearch = true;
+      if (searchQuery.trim()) {
+        const query = searchQuery.toLowerCase();
+        const plateMatch = item.vehiclePlateNumber
+          .toLowerCase()
+          .includes(query);
+        const routeMatch = (item.routeName || "")
+          .toLowerCase()
+          .includes(query);
+        matchesSearch = plateMatch || routeMatch;
+      }
+      
+      // Filter by operator
+      let matchesOperator = true;
+      if (selectedOperatorId) {
+        matchesOperator = item.vehicle?.operatorId === selectedOperatorId;
+      }
+      
+      // Filter by date range (using exitTime or entryTime if exitTime is not available)
+      let matchesDate = true;
+      if (dateRange?.from && dateRange?.to) {
+        const filterDate = item.exitTime || item.entryTime;
+        if (filterDate) {
+          const itemDate = new Date(filterDate);
+          const fromDate = new Date(dateRange.from);
+          fromDate.setHours(0, 0, 0, 0);
+          const toDate = new Date(dateRange.to);
+          toDate.setHours(23, 59, 59, 999);
+          matchesDate = itemDate >= fromDate && itemDate <= toDate;
+        } else {
+          matchesDate = false;
+        }
+      } else if (dateRange?.from) {
+        const filterDate = item.exitTime || item.entryTime;
+        if (filterDate) {
+          const itemDate = new Date(filterDate);
+          const fromDate = new Date(dateRange.from);
+          fromDate.setHours(0, 0, 0, 0);
+          matchesDate = itemDate >= fromDate;
+        } else {
+          matchesDate = false;
+        }
+      }
+      
+      return matchesSearch && matchesOperator && matchesDate;
+    });
+  }, [records, searchQuery, dateRange, selectedOperatorId]);
+
+  const renderTime = (value?: string) => (value ? formatVietnamDateTime(value) : "-");
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={loadRecords}
+            disabled={isLoading}
+            className="gap-2"
+          >
+            <RefreshCw className="h-4 w-4" />
+            Làm mới
+          </Button>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="flex items-center gap-2">
+              <Search className="h-4 w-4 text-gray-500" />
+              <Input
+                placeholder="Tìm kiếm biển số xe, luồng tuyến..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
+            <div className="space-y-0">
+              <Select
+                id="operator"
+                value={selectedOperatorId}
+                onChange={(e) => setSelectedOperatorId(e.target.value)}
+              >
+                <option value="">Chọn doanh nghiệp vận tải</option>
+                {operators.map((op) => (
+                  <option key={op.id} value={op.id}>
+                    {op.name}
+                  </option>
+                ))}
+              </Select>
+            </div>
+            <DatePickerRange
+              range={dateRange}
+              onRangeChange={setDateRange}
+              placeholder="Chọn khoảng thời gian"
+              label=""
+              className="w-full space-y-0"
+            />
+          </div>
+
+          <div className="border rounded-lg overflow-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Biển số xe</TableHead>
+                  <TableHead>Tên luồng tuyến</TableHead>
+                  <TableHead>Thời gian vào bến</TableHead>
+                  <TableHead>Giờ XB kế hoạch</TableHead>
+                  <TableHead>Giờ cấp phép lên nốt</TableHead>
+                  <TableHead>Người cấp lệnh</TableHead>
+                  <TableHead>Số khách</TableHead>
+                  <TableHead>Thời gian ra bến</TableHead>
+                  <TableHead>Thời gian đồng bộ dữ liệu</TableHead>
+                  <TableHead>Người đồng bộ dữ liệu</TableHead>
+                  <TableHead>Thông tin đồng bộ dữ liệu</TableHead>
+                  <TableHead>Trạng thái</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={12} className="text-center text-gray-500">
+                      Đang tải dữ liệu...
+                    </TableCell>
+                  </TableRow>
+                ) : filteredRecords.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={12} className="text-center text-gray-500">
+                      Không có dữ liệu
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  <>
+                    {filteredRecords.map((item) => (
+                      <TableRow key={item.id}>
+                        <TableCell className="font-semibold">
+                          {item.vehiclePlateNumber || "-"}
+                        </TableCell>
+                        <TableCell>{item.routeName || "-"}</TableCell>
+                        <TableCell>{renderTime(item.entryTime)}</TableCell>
+                        <TableCell>{renderTime(item.plannedDepartureTime)}</TableCell>
+                        <TableCell>{renderTime(item.boardingPermitTime)}</TableCell>
+                        <TableCell>
+                          {item.departureOrderBy || item.boardingPermitBy || "-"}
+                        </TableCell>
+                        <TableCell>
+                          {item.passengersDeparting ??
+                            item.passengersArrived ??
+                            item.seatCount ??
+                            "-"}
+                        </TableCell>
+                        <TableCell>{renderTime(item.exitTime)}</TableCell>
+                        <TableCell>{renderTime(item.metadata?.syncTime)}</TableCell>
+                        <TableCell>{item.metadata?.syncBy || "-"}</TableCell>
+                        <TableCell>{item.metadata?.syncInfo || "-"}</TableCell>
+                        <TableCell>
+                          {statusLabelMap[item.currentStatus] || item.currentStatus || "-"}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    <TableRow className="bg-gray-50 font-semibold">
+                      <TableCell colSpan={12}>{`Tổng: ${filteredRecords.length} xe`}</TableCell>
+                    </TableRow>
+                  </>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+

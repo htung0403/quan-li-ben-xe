@@ -38,6 +38,7 @@ import { serviceChargeService } from "@/services/service-charge.service"
 import type { DispatchRecord, ServiceCharge, ServiceType, ServiceChargeInput } from "@/types"
 import { format } from "date-fns"
 import { useUIStore } from "@/store/ui.store"
+import * as XLSX from "xlsx"
 
 export default function ThanhToan() {
   const { id } = useParams<{ id: string }>()
@@ -117,6 +118,69 @@ export default function ThanhToan() {
     }
   }
 
+  const handleExportExcel = () => {
+    if (listData.length === 0) {
+      toast.warning("Không có dữ liệu để xuất Excel")
+      return
+    }
+
+    try {
+      // Prepare data for Excel
+      const excelData = listData.map((item, index) => ({
+        "STT": index + 1,
+        "Mã đơn hàng": item.transportOrderCode || item.id.substring(0, 8),
+        "Biển kiểm soát": item.vehiclePlateNumber,
+        "Đơn vị vận tải": item.vehicle?.operator?.name || "-",
+        "Tuyến vận chuyển": item.routeName || "-",
+        "Giờ xuất bến KH": item.plannedDepartureTime 
+          ? format(new Date(item.plannedDepartureTime), "HH:mm") 
+          : "-",
+        "Ngày tạo": format(new Date(item.entryTime), "dd/MM/yyyy HH:mm"),
+        "Ngày áp dụng": format(new Date(item.entryTime), "dd/MM/yyyy"),
+        "Người tạo": item.entryBy || "-",
+        "Ca trực": "-",
+        "Tổng tiền (đồng)": item.paymentAmount || 0,
+        "Trạng thái": item.currentStatus === 'paid' ? 'Đã thanh toán' : 
+                      item.currentStatus === 'departed' ? 'Đã xuất bến' : 'Chưa thanh toán'
+      }))
+
+      // Create workbook and worksheet
+      const ws = XLSX.utils.json_to_sheet(excelData)
+      const wb = XLSX.utils.book_new()
+      XLSX.utils.book_append_sheet(wb, ws, "Danh sách đơn hàng")
+
+      // Set column widths
+      const colWidths = [
+        { wch: 5 },   // STT
+        { wch: 15 },  // Mã đơn hàng
+        { wch: 15 },  // Biển kiểm soát
+        { wch: 25 },  // Đơn vị vận tải
+        { wch: 20 },  // Tuyến vận chuyển
+        { wch: 15 },  // Giờ xuất bến KH
+        { wch: 20 },  // Ngày tạo
+        { wch: 15 },  // Ngày áp dụng
+        { wch: 15 },  // Người tạo
+        { wch: 10 },  // Ca trực
+        { wch: 18 },  // Tổng tiền
+        { wch: 15 },  // Trạng thái
+      ]
+      ws['!cols'] = colWidths
+
+      // Generate filename with date range
+      const fromDateStr = format(fromDate, "dd-MM-yyyy")
+      const toDateStr = format(toDate, "dd-MM-yyyy")
+      const filename = `Danh-sach-don-hang_${fromDateStr}_${toDateStr}.xlsx`
+
+      // Write file
+      XLSX.writeFile(wb, filename)
+      
+      toast.success(`Đã xuất Excel thành công: ${filename}`)
+    } catch (error) {
+      console.error("Failed to export Excel:", error)
+      toast.error("Không thể xuất Excel. Vui lòng thử lại sau.")
+    }
+  }
+
   const loadData = async () => {
     if (!id) return
     
@@ -178,7 +242,7 @@ export default function ThanhToan() {
       })
       
       toast.success("Thanh toán thành công!")
-      navigate("/dieu-do")
+      navigate("/thanh-toan")
     } catch (error) {
       console.error("Failed to process payment:", error)
       toast.error("Không thể xử lý thanh toán. Vui lòng thử lại sau.")
@@ -325,8 +389,8 @@ export default function ThanhToan() {
         <div className="bg-white p-2 rounded-t-lg border-b flex items-center justify-between">
             <div className="flex items-center gap-1">
                 <Button variant="ghost" size="icon" title="Làm mới" onClick={loadListData}><RefreshCw className="h-4 w-4" /></Button>
-                <Button variant="ghost" size="icon" title="Xuất Excel"><FileSpreadsheet className="h-4 w-4" /></Button>
-                <Button variant="ghost" size="icon" title="Thêm mới"><Plus className="h-4 w-4" /></Button>
+                <Button variant="ghost" size="icon" title="Xuất Excel" onClick={handleExportExcel}><FileSpreadsheet className="h-4 w-4" /></Button>
+                <Button variant="ghost" size="icon" title="Thêm mới" onClick={() => navigate("/thanh-toan/tao-moi")}><Plus className="h-4 w-4" /></Button>
                 <Button variant="ghost" size="icon" title="Xem"><Eye className="h-4 w-4" /></Button>
                 <Button variant="ghost" size="icon" title="Lọc"><Filter className="h-4 w-4" /></Button>
                 <Button variant="ghost" size="icon" title="In"><Printer className="h-4 w-4" /></Button>
