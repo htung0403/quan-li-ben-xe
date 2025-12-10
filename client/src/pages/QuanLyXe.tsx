@@ -27,6 +27,7 @@ import type { Vehicle } from "@/types"
 import { useUIStore } from "@/store/ui.store"
 import { VehicleView } from "@/components/vehicle/VehicleView"
 import { VehicleForm } from "@/components/vehicle/VehicleForm"
+import { format, isValid, parseISO } from "date-fns"
 
 // Helper functions to extract display values
 const getVehicleTypeName = (vehicle: Vehicle): string => {
@@ -35,6 +36,23 @@ const getVehicleTypeName = (vehicle: Vehicle): string => {
 
 const getOperatorName = (vehicle: Vehicle): string => {
   return vehicle.operator?.name || vehicle.operatorId || ""
+}
+
+// Helper function to format date
+const formatDate = (dateString: string | undefined | null): string => {
+  if (!dateString) return "N/A"
+  const date = typeof dateString === 'string' ? parseISO(dateString) : new Date(dateString)
+  return isValid(date) ? format(date, "dd/MM/yyyy") : "N/A"
+}
+
+// Helper function to format seat/bed capacity
+const formatCapacity = (vehicle: Vehicle): string => {
+  const seat = vehicle.seatCapacity || 0
+  const bed = vehicle.bedCapacity || 0
+  if (bed > 0) {
+    return `${seat} | ${bed}`
+  }
+  return `${seat}`
 }
 
 export default function QuanLyXe() {
@@ -46,6 +64,8 @@ export default function QuanLyXe() {
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [viewMode, setViewMode] = useState<"create" | "edit" | "view">("create")
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+  const [vehicleToDelete, setVehicleToDelete] = useState<Vehicle | null>(null)
   const setTitle = useUIStore((state) => state.setTitle)
 
   useEffect(() => {
@@ -118,14 +138,23 @@ export default function QuanLyXe() {
     setDialogOpen(true)
   }
 
-  const handleDelete = async (id: string) => {
-    if (window.confirm("Bạn có chắc chắn muốn xóa xe này?")) {
-      try {
-        await vehicleService.delete(id)
-        loadVehicles()
-      } catch (error) {
-        console.error("Failed to delete vehicle:", error)
-      }
+  const handleDelete = (vehicle: Vehicle) => {
+    setVehicleToDelete(vehicle)
+    setDeleteDialogOpen(true)
+  }
+
+  const confirmDelete = async () => {
+    if (!vehicleToDelete) return
+    
+    try {
+      await vehicleService.delete(vehicleToDelete.id)
+      toast.success("Xóa xe thành công")
+      setDeleteDialogOpen(false)
+      setVehicleToDelete(null)
+      loadVehicles()
+    } catch (error: any) {
+      console.error("Failed to delete vehicle:", error)
+      toast.error(error.response?.data?.error || "Không thể xóa xe. Vui lòng thử lại.")
     }
   }
 
@@ -196,10 +225,10 @@ export default function QuanLyXe() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="text-center">Biển số</TableHead>
-              <TableHead className="text-center">Loại xe</TableHead>
-              <TableHead className="text-center">Số ghế</TableHead>
-              <TableHead className="text-center">Nhà xe</TableHead>
+              <TableHead className="text-center">Biển kiểm soát</TableHead>
+              <TableHead className="text-center">Số ghế | Số giường</TableHead>
+              <TableHead className="text-center">Hạn bảo hiểm xe</TableHead>
+              <TableHead className="text-center">Hạn đăng kiểm xe</TableHead>
               <TableHead className="text-center">Trạng thái</TableHead>
               <TableHead className="text-center">Thao tác</TableHead>
             </TableRow>
@@ -223,9 +252,15 @@ export default function QuanLyXe() {
                   <TableCell className="font-medium text-center">
                     {vehicle.plateNumber}
                   </TableCell>
-                  <TableCell className="text-center">{getVehicleTypeName(vehicle)}</TableCell>
-                  <TableCell className="text-center">{vehicle.seatCapacity}</TableCell>
-                  <TableCell className="text-center">{getOperatorName(vehicle)}</TableCell>
+                  <TableCell className="text-center">
+                    {formatCapacity(vehicle)}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    {formatDate(vehicle.insuranceExpiryDate)}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    {formatDate(vehicle.inspectionExpiryDate)}
+                  </TableCell>
                   <TableCell className="text-center">
                     <StatusBadge status={vehicle.isActive ? "active" : "inactive"} />
                   </TableCell>
@@ -250,7 +285,7 @@ export default function QuanLyXe() {
                       <Button
                         size="sm"
                         variant="ghost"
-                        onClick={() => handleDelete(vehicle.id)}
+                        onClick={() => handleDelete(vehicle)}
                         aria-label="Xóa"
                       >
                         <Trash2 className="h-4 w-4 text-red-600" />
@@ -288,6 +323,42 @@ export default function QuanLyXe() {
                 }}
               />
             )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-xl">Xác nhận xóa xe</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-gray-700">
+              Bạn có chắc chắn muốn xóa xe <strong>{vehicleToDelete?.plateNumber}</strong>?
+            </p>
+            <p className="text-sm text-gray-500 mt-2">
+              Xe sẽ được chuyển sang trạng thái đã xóa và không hiển thị trong danh sách.
+            </p>
+          </div>
+          <div className="flex justify-end gap-3 pt-4 border-t">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setDeleteDialogOpen(false)
+                setVehicleToDelete(null)
+              }}
+            >
+              Hủy
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={confirmDelete}
+            >
+              Xóa
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

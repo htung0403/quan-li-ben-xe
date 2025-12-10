@@ -156,8 +156,10 @@ export interface VehicleInput {
 // Driver types
 export interface Driver {
   id: string
-  operatorId: string
-  operator?: Operator
+  operatorId: string // Keep for backward compatibility
+  operator?: Operator // Keep for backward compatibility
+  operatorIds?: string[] // Array of operator IDs
+  operators?: Array<Operator & { isPrimary?: boolean }> // Array of operators with primary flag
   fullName: string
   idNumber: string
   phone?: string
@@ -174,7 +176,7 @@ export interface Driver {
 }
 
 export interface DriverInput {
-  operatorId: string
+  operatorIds: string[] // Array of operator IDs (at least one required)
   fullName: string
   idNumber: string
   phone?: string
@@ -195,8 +197,6 @@ export interface Location {
   stationType?: string
   phone?: string
   email?: string
-  province?: string
-  district?: string
   address?: string
   latitude?: number
   longitude?: number
@@ -210,8 +210,6 @@ export interface LocationInput {
   stationType?: string
   phone?: string
   email?: string
-  province?: string
-  district?: string
   address?: string
   latitude?: number
   longitude?: number
@@ -222,6 +220,7 @@ export interface Route {
   id: string
   routeCode: string
   routeName: string
+  routeType?: string
   originId: string
   origin?: Location
   destinationId: string

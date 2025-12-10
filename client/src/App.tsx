@@ -16,6 +16,7 @@ import QuanLyXe from "@/pages/QuanLyXe"
 import QuanLyLaiXe from "@/pages/QuanLyLaiXe"
 import QuanLyDonViVanTai from "@/pages/QuanLyDonViVanTai"
 import QuanLyTuyen from "@/pages/QuanLyTuyen"
+import QuanLyBenDen from "@/pages/QuanLyBenDen"
 import BaoCao from "@/pages/BaoCao"
 import Profile from "@/pages/Profile"
 import BangGiaVeDienTu from "@/pages/pricing/BangGiaVeDienTu"
@@ -27,6 +28,12 @@ import LienHe from "@/pages/LienHe"
 import XeXuatBen from "@/pages/XeXuatBen"
 import XeTraKhach from "@/pages/XeTraKhach"
 import XeKhongDuDieuKien from "@/pages/XeKhongDuDieuKien"
+import BaoCaoXeTraKhach from "@/pages/BaoCaoXeTraKhach"
+import BaoCaoTongHopTuyen from "@/pages/BaoCaoTongHopTuyen"
+import BaoCaoTongHop from "@/pages/BaoCaoTongHop"
+import BaoCaoDoanhThuBenBanVe from "@/pages/BaoCaoDoanhThuBenBanVe"
+import BaoCaoCapPhepRaBen from "@/pages/BaoCaoCapPhepRaBen"
+import BaoCaoChamCongDangTai from "@/pages/BaoCaoChamCongDangTai"
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading, checkAuth } = useAuthStore()
@@ -204,11 +211,81 @@ function App() {
           }
         />
         <Route
+          path="/quan-ly-ben-den"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <QuanLyBenDen />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/bao-cao"
           element={
             <ProtectedRoute>
               <MainLayout>
                 <BaoCao />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/bao-cao/xe-tra-khach"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <BaoCaoXeTraKhach />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/bao-cao/tong-hop-tuyen"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <BaoCaoTongHopTuyen />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/bao-cao/tong-hop"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <BaoCaoTongHop />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/bao-cao/doanh-thu-ben-ban-ve"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <BaoCaoDoanhThuBenBanVe />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/bao-cao/cap-phep-ra-ben"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <BaoCaoCapPhepRaBen />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/bao-cao/cham-cong-dang-tai"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <BaoCaoChamCongDangTai />
               </MainLayout>
             </ProtectedRoute>
           }

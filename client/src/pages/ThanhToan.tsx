@@ -32,13 +32,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { DateTimePicker } from "@/components/DatePicker"
 import { dispatchService } from "@/services/dispatch.service"
 import { serviceChargeService } from "@/services/service-charge.service"
 import type { DispatchRecord, ServiceCharge, ServiceType, ServiceChargeInput } from "@/types"
 import { format } from "date-fns"
 import { useUIStore } from "@/store/ui.store"
 import * as XLSX from "xlsx"
+import { DatePickerRange } from "@/components/DatePickerRange"
+import { type DateRange } from "react-day-picker"
 
 export default function ThanhToan() {
   const { id } = useParams<{ id: string }>()
@@ -68,8 +69,15 @@ export default function ThanhToan() {
 
   // List view state
   const [listData, setListData] = useState<DispatchRecord[]>([])
-  const [fromDate, setFromDate] = useState<Date>(new Date(new Date().setHours(0,0,0,0)))
-  const [toDate, setToDate] = useState<Date>(new Date(new Date().setHours(23,59,59,999)))
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(() => {
+    const today = new Date()
+    const fromDate = new Date(today.setHours(0, 0, 0, 0))
+    const toDate = new Date(today.setHours(23, 59, 59, 999))
+    return {
+      from: fromDate,
+      to: toDate,
+    }
+  })
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -101,10 +109,24 @@ export default function ThanhToan() {
       const data = await dispatchService.getAll()
       
       // Filter by date (client-side for now)
-      const filtered = data.filter(record => {
+      let filtered = data
+      if (dateRange?.from && dateRange?.to) {
+        const fromDate = new Date(dateRange.from)
+        fromDate.setHours(0, 0, 0, 0)
+        const toDate = new Date(dateRange.to)
+        toDate.setHours(23, 59, 59, 999)
+        filtered = data.filter(record => {
           const entryTime = new Date(record.entryTime)
           return entryTime >= fromDate && entryTime <= toDate
-      })
+        })
+      } else if (dateRange?.from) {
+        const fromDate = new Date(dateRange.from)
+        fromDate.setHours(0, 0, 0, 0)
+        filtered = data.filter(record => {
+          const entryTime = new Date(record.entryTime)
+          return entryTime >= fromDate
+        })
+      }
       
       // Sort by entry time desc
       filtered.sort((a, b) => new Date(b.entryTime).getTime() - new Date(a.entryTime).getTime())
@@ -167,8 +189,8 @@ export default function ThanhToan() {
       ws['!cols'] = colWidths
 
       // Generate filename with date range
-      const fromDateStr = format(fromDate, "dd-MM-yyyy")
-      const toDateStr = format(toDate, "dd-MM-yyyy")
+      const fromDateStr = dateRange?.from ? format(dateRange.from, "dd-MM-yyyy") : format(new Date(), "dd-MM-yyyy")
+      const toDateStr = dateRange?.to ? format(dateRange.to, "dd-MM-yyyy") : format(new Date(), "dd-MM-yyyy")
       const filename = `Danh-sach-don-hang_${fromDateStr}_${toDateStr}.xlsx`
 
       // Write file
@@ -359,12 +381,14 @@ export default function ThanhToan() {
         <div className="bg-white p-4 rounded-lg shadow-sm mb-4">
             <div className="flex flex-wrap items-end gap-4">
                 <div className="w-64">
-                    <Label className="text-xs text-gray-500 mb-1 block">Từ ngày (*)</Label>
-                    <DateTimePicker date={fromDate} onDateChange={(d) => d && setFromDate(d)} />
-                </div>
-                <div className="w-64">
-                    <Label className="text-xs text-gray-500 mb-1 block">Đến ngày (*)</Label>
-                    <DateTimePicker date={toDate} onDateChange={(d) => d && setToDate(d)} />
+                    <Label className="text-xs text-gray-500 mb-1 block">Khoảng thời gian (*)</Label>
+                    <DatePickerRange
+                      range={dateRange}
+                      onRangeChange={setDateRange}
+                      placeholder="Chọn khoảng thời gian"
+                      label=""
+                      className="w-full space-y-0"
+                    />
                 </div>
                 <div className="w-48">
                     <Label className="text-xs text-gray-500 mb-1 block">Loại đơn hàng (*)</Label>

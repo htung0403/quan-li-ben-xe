@@ -233,6 +233,7 @@ export interface Route {
   id: string
   routeCode: string
   routeName: string
+  routeType?: string
   originId: string
   origin?: Location
   destinationId: string

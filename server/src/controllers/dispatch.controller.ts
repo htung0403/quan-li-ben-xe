@@ -57,6 +57,7 @@ export const getAllDispatchRecords = async (req: Request, res: Response) => {
       r.departure_order_by,
       r.exit_by,
       r.boarding_permit_by,
+      r.passenger_drop_by,
     ]).filter((id: any) => id !== null))]
 
     const { data: vehicles } = await supabase
@@ -76,7 +77,7 @@ export const getAllDispatchRecords = async (req: Request, res: Response) => {
 
     const { data: routes } = routeIds.length > 0 ? await supabase
       .from('routes')
-      .select('id, route_name')
+      .select('id, route_name, route_type')
       .in('id', routeIds) : { data: [] }
 
     const { data: users } = userIds.length > 0 ? await supabase
@@ -101,47 +102,53 @@ export const getAllDispatchRecords = async (req: Request, res: Response) => {
     }) || [])
     const driverMap = new Map(drivers?.map((d: any) => [d.id, d.full_name]) || [])
     const routeMap = new Map(routes?.map((r: any) => [r.id, r.route_name]) || [])
+    const routeDataMap = new Map(routes?.map((r: any) => [r.id, {
+      id: r.id,
+      routeName: r.route_name,
+      routeType: r.route_type,
+    }]) || [])
     const userMap = new Map(users?.map((u: any) => [u.id, u.full_name]) || [])
 
     const result = records.map((record: any) => {
       const vehicleData = vehicleDataMap.get(record.vehicle_id)
       return {
-        id: record.id,
-        vehicleId: record.vehicle_id,
+      id: record.id,
+      vehicleId: record.vehicle_id,
         vehicle: vehicleData,
-        vehiclePlateNumber: vehicleMap.get(record.vehicle_id) || '',
-        driverId: record.driver_id,
-        driverName: driverMap.get(record.driver_id) || '',
-        scheduleId: record.schedule_id,
-        routeId: record.route_id,
-        routeName: routeMap.get(record.route_id) || '',
-        entryTime: record.entry_time,
-        entryBy: userMap.get(record.entry_by) || record.entry_by,
-        passengerDropTime: record.passenger_drop_time,
-        passengersArrived: record.passengers_arrived,
-        passengerDropBy: record.passenger_drop_by,
-        boardingPermitTime: record.boarding_permit_time,
-        plannedDepartureTime: record.planned_departure_time,
-        transportOrderCode: record.transport_order_code,
-        seatCount: record.seat_count,
-        permitStatus: record.permit_status,
-        rejectionReason: record.rejection_reason,
+      vehiclePlateNumber: vehicleMap.get(record.vehicle_id) || '',
+      driverId: record.driver_id,
+      driverName: driverMap.get(record.driver_id) || '',
+      scheduleId: record.schedule_id,
+      routeId: record.route_id,
+      route: routeDataMap.get(record.route_id),
+      routeName: routeMap.get(record.route_id) || '',
+      entryTime: record.entry_time,
+      entryBy: userMap.get(record.entry_by) || record.entry_by,
+      passengerDropTime: record.passenger_drop_time,
+      passengersArrived: record.passengers_arrived,
+      passengerDropBy: userMap.get(record.passenger_drop_by) || record.passenger_drop_by,
+      boardingPermitTime: record.boarding_permit_time,
+      plannedDepartureTime: record.planned_departure_time,
+      transportOrderCode: record.transport_order_code,
+      seatCount: record.seat_count,
+      permitStatus: record.permit_status,
+      rejectionReason: record.rejection_reason,
         boardingPermitBy: userMap.get(record.boarding_permit_by) || record.boarding_permit_by,
-        paymentTime: record.payment_time,
-        paymentAmount: record.payment_amount ? parseFloat(record.payment_amount) : null,
-        paymentMethod: record.payment_method,
-        invoiceNumber: record.invoice_number,
+      paymentTime: record.payment_time,
+      paymentAmount: record.payment_amount ? parseFloat(record.payment_amount) : null,
+      paymentMethod: record.payment_method,
+      invoiceNumber: record.invoice_number,
         paymentBy: userMap.get(record.payment_by) || record.payment_by,
-        departureOrderTime: record.departure_order_time,
-        passengersDeparting: record.passengers_departing,
+      departureOrderTime: record.departure_order_time,
+      passengersDeparting: record.passengers_departing,
         departureOrderBy: userMap.get(record.departure_order_by) || record.departure_order_by,
-        exitTime: record.exit_time,
+      exitTime: record.exit_time,
         exitBy: userMap.get(record.exit_by) || record.exit_by,
-        currentStatus: record.current_status,
-        notes: record.notes,
-        metadata: record.metadata,
-        createdAt: record.created_at,
-        updatedAt: record.updated_at,
+      currentStatus: record.current_status,
+      notes: record.notes,
+      metadata: record.metadata,
+      createdAt: record.created_at,
+      updatedAt: record.updated_at,
       }
     })
 
@@ -190,11 +197,28 @@ export const getDispatchRecordById = async (req: Request, res: Response) => {
     if (record.route_id) {
       const { data: routeData } = await supabase
         .from('routes')
-        .select('id, route_name')
+        .select('id, route_name, route_type')
         .eq('id', record.route_id)
         .single()
       route = routeData
     }
+
+    // Fetch user data for all user fields
+    const userIds = [
+      record.entry_by,
+      record.payment_by,
+      record.departure_order_by,
+      record.exit_by,
+      record.boarding_permit_by,
+      record.passenger_drop_by,
+    ].filter((id: any) => id !== null)
+
+    const { data: users } = userIds.length > 0 ? await supabase
+      .from('users')
+      .select('id, full_name')
+      .in('id', userIds) : { data: [] }
+
+    const userMap = new Map(users?.map((u: any) => [u.id, u.full_name]) || [])
 
     // Format operator data
     const operatorData = Array.isArray(vehicle?.operators) ? vehicle?.operators[0] : vehicle?.operators
@@ -220,27 +244,27 @@ export const getDispatchRecordById = async (req: Request, res: Response) => {
       routeId: record.route_id,
       routeName: route?.route_name || '',
       entryTime: record.entry_time,
-      entryBy: record.entry_by,
+      entryBy: userMap.get(record.entry_by) || record.entry_by,
       passengerDropTime: record.passenger_drop_time,
       passengersArrived: record.passengers_arrived,
-      passengerDropBy: record.passenger_drop_by,
+      passengerDropBy: userMap.get(record.passenger_drop_by) || record.passenger_drop_by,
       boardingPermitTime: record.boarding_permit_time,
       plannedDepartureTime: record.planned_departure_time,
       transportOrderCode: record.transport_order_code,
       seatCount: record.seat_count,
       permitStatus: record.permit_status,
       rejectionReason: record.rejection_reason,
-      boardingPermitBy: record.boarding_permit_by,
+      boardingPermitBy: userMap.get(record.boarding_permit_by) || record.boarding_permit_by,
       paymentTime: record.payment_time,
       paymentAmount: record.payment_amount ? parseFloat(record.payment_amount) : null,
       paymentMethod: record.payment_method,
       invoiceNumber: record.invoice_number,
-      paymentBy: record.payment_by,
+      paymentBy: userMap.get(record.payment_by) || record.payment_by,
       departureOrderTime: record.departure_order_time,
       passengersDeparting: record.passengers_departing,
-      departureOrderBy: record.departure_order_by,
+      departureOrderBy: userMap.get(record.departure_order_by) || record.departure_order_by,
       exitTime: record.exit_time,
-      exitBy: record.exit_by,
+      exitBy: userMap.get(record.exit_by) || record.exit_by,
       currentStatus: record.current_status,
       notes: record.notes,
       metadata: record.metadata,
@@ -304,7 +328,7 @@ export const createDispatchRecord = async (req: AuthRequest, res: Response) => {
     if (data.route_id) {
       const { data: routeData } = await supabase
         .from('routes')
-        .select('id, route_name')
+        .select('id, route_name, route_type')
         .eq('id', data.route_id)
         .single()
       route = routeData
@@ -332,6 +356,11 @@ export const createDispatchRecord = async (req: AuthRequest, res: Response) => {
       driverName: driver?.full_name || '',
       scheduleId: data.schedule_id,
       routeId: data.route_id,
+      route: route ? {
+        id: route.id,
+        routeName: route.route_name,
+        routeType: route.route_type,
+      } : undefined,
       routeName: route?.route_name || '',
       entryTime: data.entry_time,
       entryBy: data.entry_by,

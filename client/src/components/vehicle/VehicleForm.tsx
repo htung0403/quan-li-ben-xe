@@ -1,6 +1,7 @@
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
+import { toast } from "react-toastify"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -22,9 +23,33 @@ const vehicleSchema = z.object({
   engineNumber: z.string().optional(),
   insuranceExpiryDate: z.string().optional(),
   inspectionExpiryDate: z.string().optional(),
-  cargoLength: z.number().optional(),
-  cargoWidth: z.number().optional(),
-  cargoHeight: z.number().optional(),
+  cargoLength: z.preprocess(
+    (val) => {
+      if (val === "" || val === null || val === undefined) return undefined
+      if (typeof val === 'number' && isNaN(val)) return undefined
+      const num = Number(val)
+      return isNaN(num) ? undefined : num
+    },
+    z.number().optional()
+  ),
+  cargoWidth: z.preprocess(
+    (val) => {
+      if (val === "" || val === null || val === undefined) return undefined
+      if (typeof val === 'number' && isNaN(val)) return undefined
+      const num = Number(val)
+      return isNaN(num) ? undefined : num
+    },
+    z.number().optional()
+  ),
+  cargoHeight: z.preprocess(
+    (val) => {
+      if (val === "" || val === null || val === undefined) return undefined
+      if (typeof val === 'number' && isNaN(val)) return undefined
+      const num = Number(val)
+      return isNaN(num) ? undefined : num
+    },
+    z.number().optional()
+  ),
   gpsProvider: z.string().optional(),
   gpsUsername: z.string().optional(),
   gpsPassword: z.string().optional(),
@@ -54,12 +79,30 @@ export function VehicleForm({
     loadOperators()
   }, [])
 
+  useEffect(() => {
+    if (vehicle) {
+      setVehicleImage(vehicle.imageUrl || null)
+    }
+  }, [vehicle])
+
   const loadOperators = async () => {
     try {
       const data = await operatorService.getAll(true)
       setOperators(data)
     } catch (error) {
       console.error("Failed to load operators:", error)
+    }
+  }
+
+  // Helper function to format date for input type="date"
+  const formatDateForInput = (dateString: string | undefined | null): string => {
+    if (!dateString) return ""
+    try {
+      const date = new Date(dateString)
+      if (isNaN(date.getTime())) return ""
+      return date.toISOString().split("T")[0]
+    } catch {
+      return ""
     }
   }
 
@@ -72,13 +115,13 @@ export function VehicleForm({
       if (file) {
         // Validate file type
         if (!file.type.startsWith('image/')) {
-          alert('Vui lòng chọn file ảnh')
+          toast.error('Vui lòng chọn file ảnh')
           return
         }
 
         // Validate file size (max 5MB)
         if (file.size > 5 * 1024 * 1024) {
-          alert('Kích thước ảnh không được vượt quá 5MB')
+          toast.error('Kích thước ảnh không được vượt quá 5MB')
           return
         }
 
@@ -96,9 +139,10 @@ export function VehicleForm({
           
           setVehicleImage(response.data.url)
           setValue("imageUrl", response.data.url)
+          toast.success('Upload ảnh thành công')
         } catch (error) {
           console.error('Failed to upload image:', error)
-          alert('Không thể tải ảnh lên. Vui lòng thử lại.')
+          toast.error('Không thể tải ảnh lên. Vui lòng thử lại.')
         } finally {
           setIsUploading(false)
         }
@@ -115,22 +159,22 @@ export function VehicleForm({
   } = useForm<VehicleFormData>({
     resolver: zodResolver(vehicleSchema),
     defaultValues: vehicle ? {
-      plateNumber: vehicle.plateNumber,
-      operatorId: vehicle.operatorId,
+      plateNumber: vehicle.plateNumber || "",
+      operatorId: vehicle.operatorId || "",
       vehicleTypeId: vehicle.vehicleTypeId || "",
-      seatCapacity: vehicle.seatCapacity,
-      bedCapacity: 0,
-      chassisNumber: "",
-      engineNumber: "",
-      insuranceExpiryDate: "",
-      inspectionExpiryDate: "",
-      cargoLength: undefined,
-      cargoWidth: undefined,
-      cargoHeight: undefined,
-      gpsProvider: "",
-      gpsUsername: "",
-      gpsPassword: "",
-      imageUrl: "",
+      seatCapacity: vehicle.seatCapacity || 1,
+      bedCapacity: vehicle.bedCapacity || 0,
+      chassisNumber: vehicle.chassisNumber || "",
+      engineNumber: vehicle.engineNumber || "",
+      insuranceExpiryDate: formatDateForInput(vehicle.insuranceExpiryDate),
+      inspectionExpiryDate: formatDateForInput(vehicle.inspectionExpiryDate),
+      cargoLength: vehicle.cargoLength || undefined,
+      cargoWidth: vehicle.cargoWidth || undefined,
+      cargoHeight: vehicle.cargoHeight || undefined,
+      gpsProvider: vehicle.gpsProvider || "",
+      gpsUsername: vehicle.gpsUsername || "",
+      gpsPassword: vehicle.gpsPassword || "",
+      imageUrl: vehicle.imageUrl || "",
     } : {
       operatorId: "",
       seatCapacity: 1,
@@ -142,29 +186,43 @@ export function VehicleForm({
   const onSubmit = async (data: VehicleFormData) => {
     console.log("Form submitted with data:", data)
     try {
-      // Add imageUrl to data
-      const submitData = {
+      // Clean up data: remove undefined values for optional fields
+      const submitData: any = {
         ...data,
         imageUrl: vehicleImage || "",
       }
+      
+      // Remove undefined cargo dimensions
+      if (submitData.cargoLength === undefined) delete submitData.cargoLength
+      if (submitData.cargoWidth === undefined) delete submitData.cargoWidth
+      if (submitData.cargoHeight === undefined) delete submitData.cargoHeight
+      
+      // Remove empty strings for optional fields
+      if (submitData.chassisNumber === "") delete submitData.chassisNumber
+      if (submitData.engineNumber === "") delete submitData.engineNumber
+      if (submitData.insuranceExpiryDate === "") delete submitData.insuranceExpiryDate
+      if (submitData.inspectionExpiryDate === "") delete submitData.inspectionExpiryDate
+      if (submitData.gpsProvider === "") delete submitData.gpsProvider
+      if (submitData.gpsUsername === "") delete submitData.gpsUsername
+      if (submitData.gpsPassword === "") delete submitData.gpsPassword
       
       console.log("Submitting data:", submitData)
       
       if (mode === "create") {
         console.log("Creating vehicle...")
         await vehicleService.create(submitData as VehicleInput)
-        alert("Thêm xe thành công!")
+        toast.success("Thêm xe thành công!")
       } else if (vehicle) {
         console.log("Updating vehicle...")
         await vehicleService.update(vehicle.id, submitData)
-        alert("Cập nhật xe thành công!")
+        toast.success("Cập nhật xe thành công!")
       }
       onClose()
     } catch (error: any) {
       console.error("Failed to save vehicle:", error)
       console.error("Error response:", error.response?.data)
       const errorMsg = error.response?.data?.message || error.response?.data?.error || "Có lỗi xảy ra khi lưu thông tin xe"
-      alert(errorMsg)
+      toast.error(errorMsg)
     }
   }
 
@@ -343,7 +401,11 @@ export function VehicleForm({
                   step="0.1"
                   className="h-11"
                   placeholder="Chiều dài (m)"
-                  {...register("cargoLength", { valueAsNumber: true })}
+                  {...register("cargoLength", { setValueAs: (v) => {
+                    if (v === "" || v === null || v === undefined) return undefined
+                    const num = Number(v)
+                    return isNaN(num) ? undefined : num
+                  }})}
                 />
               </div>
 
@@ -358,7 +420,11 @@ export function VehicleForm({
                   step="0.1"
                   className="h-11"
                   placeholder="Chiều rộng (m)"
-                  {...register("cargoWidth", { valueAsNumber: true })}
+                  {...register("cargoWidth", { setValueAs: (v) => {
+                    if (v === "" || v === null || v === undefined) return undefined
+                    const num = Number(v)
+                    return isNaN(num) ? undefined : num
+                  }})}
                 />
               </div>
 
@@ -373,7 +439,11 @@ export function VehicleForm({
                   step="0.1"
                   className="h-11"
                   placeholder="Chiều cao (m)"
-                  {...register("cargoHeight", { valueAsNumber: true })}
+                  {...register("cargoHeight", { setValueAs: (v) => {
+                    if (v === "" || v === null || v === undefined) return undefined
+                    const num = Number(v)
+                    return isNaN(num) ? undefined : num
+                  }})}
                 />
               </div>
             </div>

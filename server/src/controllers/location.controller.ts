@@ -8,8 +8,6 @@ const locationSchema = z.object({
   stationType: z.string().optional(),
   phone: z.string().optional(),
   email: z.string().email().optional().or(z.literal('')),
-  province: z.string().optional(),
-  district: z.string().optional(),
   address: z.string().optional(),
   latitude: z.number().optional(),
   longitude: z.number().optional(),
@@ -17,16 +15,13 @@ const locationSchema = z.object({
 
 export const getAllLocations = async (req: Request, res: Response) => {
   try {
-    const { province, isActive } = req.query
+    const { isActive } = req.query
 
     let query = supabase
       .from('locations')
       .select('*')
       .order('name', { ascending: true })
 
-    if (province) {
-      query = query.eq('province', province as string)
-    }
     if (isActive !== undefined) {
       query = query.eq('is_active', isActive === 'true')
     }
@@ -42,8 +37,6 @@ export const getAllLocations = async (req: Request, res: Response) => {
       stationType: loc.station_type,
       phone: loc.phone,
       email: loc.email,
-      province: loc.province,
-      district: loc.district,
       address: loc.address,
       latitude: loc.latitude ? parseFloat(loc.latitude) : null,
       longitude: loc.longitude ? parseFloat(loc.longitude) : null,
@@ -80,8 +73,6 @@ export const getLocationById = async (req: Request, res: Response) => {
       stationType: data.station_type,
       phone: data.phone,
       email: data.email,
-      province: data.province,
-      district: data.district,
       address: data.address,
       latitude: data.latitude ? parseFloat(data.latitude) : null,
       longitude: data.longitude ? parseFloat(data.longitude) : null,
@@ -106,8 +97,6 @@ export const createLocation = async (req: Request, res: Response) => {
         station_type: validated.stationType || null,
         phone: validated.phone || null,
         email: validated.email || null,
-        province: validated.province || null,
-        district: validated.district || null,
         address: validated.address || null,
         latitude: validated.latitude || null,
         longitude: validated.longitude || null,
@@ -156,8 +145,6 @@ export const updateLocation = async (req: Request, res: Response) => {
     if (validated.stationType !== undefined) updateData.station_type = validated.stationType || null
     if (validated.phone !== undefined) updateData.phone = validated.phone || null
     if (validated.email !== undefined) updateData.email = validated.email || null
-    if (validated.province !== undefined) updateData.province = validated.province || null
-    if (validated.district !== undefined) updateData.district = validated.district || null
     if (validated.address !== undefined) updateData.address = validated.address || null
     if (validated.latitude !== undefined) updateData.latitude = validated.latitude || null
     if (validated.longitude !== undefined) updateData.longitude = validated.longitude || null
@@ -181,8 +168,6 @@ export const updateLocation = async (req: Request, res: Response) => {
       stationType: data.station_type,
       phone: data.phone,
       email: data.email,
-      province: data.province,
-      district: data.district,
       address: data.address,
       latitude: data.latitude ? parseFloat(data.latitude) : null,
       longitude: data.longitude ? parseFloat(data.longitude) : null,

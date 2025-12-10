@@ -43,6 +43,7 @@ import { CapPhepDialog } from "@/components/dispatch/CapPhepDialog";
 import { ThanhToanTheoThangDialog } from "@/components/dispatch/ThanhToanTheoThangDialog";
 import { ChoXeRaBenDialog } from "@/components/dispatch/ChoXeRaBenDialog";
 import { CapLenhXuatBenDialog } from "@/components/dispatch/CapLenhXuatBenDialog";
+import { ChoNhieuXeRaBenDialog } from "@/components/dispatch/ChoNhieuXeRaBenDialog";
 import type { DispatchRecord, DispatchStatus, Vehicle } from "@/types";
 import { formatVietnamDateTime } from "@/lib/vietnam-time";
 import { useUIStore } from "@/store/ui.store";
@@ -68,6 +69,7 @@ export default function DieuDo() {
     | "depart"
     | "departure-order"
     | "monthly-payment"
+    | "depart-multiple"
   >("entry");
   const [isReadOnly, setIsReadOnly] = useState(false);
   const setTitle = useUIStore((state) => state.setTitle);
@@ -565,6 +567,17 @@ export default function DieuDo() {
           <Select className="w-48">
             <option value="">Loại cấp nốt</option>
           </Select>
+          <Button
+            variant="outline"
+            onClick={() => {
+              setDialogType("depart-multiple");
+              setDialogOpen(true);
+            }}
+            className="gap-2"
+          >
+            <ArrowRight className="h-4 w-4" />
+            Cho nhiều xe ra bến
+          </Button>
           <Button variant="outline" size="icon" onClick={loadRecords}>
             <RefreshCw className="h-4 w-4" />
           </Button>
@@ -709,9 +722,37 @@ export default function DieuDo() {
             }}
           />
         )}
+        {/* Cho nhiều xe ra bến Dialog */}
+        {dialogType === "depart-multiple" && (
+          <Dialog
+            open={dialogOpen}
+            onOpenChange={setDialogOpen}
+          >
+            <DialogContent
+              className="max-h-[95vh] overflow-y-auto w-[95vw] max-w-[1800px]"
+            >
+              <DialogClose onClose={() => setDialogOpen(false)} />
+              <DialogHeader>
+                <DialogTitle>Cho nhiều xe ra bến</DialogTitle>
+              </DialogHeader>
+              <ChoNhieuXeRaBenDialog
+                records={records.filter((r) => {
+                  // Only show records that have departure order (ready to exit)
+                  return r.currentStatus === "departure_ordered";
+                })}
+                onClose={() => setDialogOpen(false)}
+                onSuccess={() => {
+                  loadRecords();
+                }}
+                open={dialogOpen}
+              />
+            </DialogContent>
+          </Dialog>
+        )}
+
         {/* Other Dialogs */}
         <Dialog
-          open={dialogOpen && dialogType !== "permit" && dialogType !== "entry"}
+          open={dialogOpen && dialogType !== "permit" && dialogType !== "entry" && dialogType !== "depart-multiple"}
           onOpenChange={setDialogOpen}
         >
           <DialogContent

@@ -585,15 +585,26 @@ export const deleteVehicle = async (req: Request, res: Response) => {
   try {
     const { id } = req.params
 
-    const { error } = await supabase
+    // Soft delete: set is_active to false instead of deleting
+    const { data, error } = await supabase
       .from('vehicles')
-      .delete()
+      .update({ is_active: false })
       .eq('id', id)
+      .select()
+      .single()
 
     if (error) throw error
+    if (!data) {
+      return res.status(404).json({ error: 'Vehicle not found' })
+    }
 
-    res.status(204).send()
+    return res.json({
+      id: data.id,
+      isActive: data.is_active,
+      message: 'Vehicle deleted successfully'
+    })
   } catch (error: any) {
-    res.status(500).json({ error: error.message || 'Failed to delete vehicle' })
+    console.error('Error deleting vehicle:', error)
+    return res.status(500).json({ error: error.message || 'Failed to delete vehicle' })
   }
 }
