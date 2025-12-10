@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { RefreshCw, Search } from "lucide-react";
+import { RefreshCw, Search, FileSpreadsheet } from "lucide-react";
 import { type DateRange } from "react-day-picker";
+import { toast } from "react-toastify";
+import { format } from "date-fns";
+import * as XLSX from "xlsx";
 import {
   Table,
   TableBody,
@@ -123,20 +126,85 @@ export default function XeTraKhach() {
 
   const renderTime = (value?: string) => (value ? formatVietnamDateTime(value) : "-");
 
+  const handleExportExcel = () => {
+    if (filteredRecords.length === 0) {
+      toast.warning("Không có dữ liệu để xuất Excel");
+      return;
+    }
+
+    try {
+      // Prepare data for Excel
+      const excelData = filteredRecords.map((item, index) => ({
+        "STT": index + 1,
+        "Biển số xe": item.vehiclePlateNumber || "-",
+        "Tên luồng tuyến": item.routeName || "-",
+        "Số khách": item.passengersArrived ?? item.seatCount ?? "-",
+        "Thời gian xác nhận trả khách": item.passengerDropTime ? format(new Date(item.passengerDropTime), "dd/MM/yyyy HH:mm") : "-",
+        "Thời gian đồng bộ dữ liệu": item.metadata?.syncTime ? format(new Date(item.metadata.syncTime), "dd/MM/yyyy HH:mm") : "-",
+        "Người đồng bộ dữ liệu": item.metadata?.syncBy || "-",
+        "Thông tin đồng bộ dữ liệu": item.metadata?.syncInfo || "-",
+        "Trạng thái": statusLabelMap[item.currentStatus] || item.currentStatus || "-",
+      }));
+
+      // Create workbook and worksheet
+      const ws = XLSX.utils.json_to_sheet(excelData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Xe trả khách");
+
+      // Set column widths
+      const colWidths = [
+        { wch: 5 },   // STT
+        { wch: 15 },  // Biển số xe
+        { wch: 25 },  // Tên luồng tuyến
+        { wch: 10 },  // Số khách
+        { wch: 25 },  // Thời gian xác nhận trả khách
+        { wch: 25 },  // Thời gian đồng bộ dữ liệu
+        { wch: 20 },  // Người đồng bộ dữ liệu
+        { wch: 25 },  // Thông tin đồng bộ dữ liệu
+        { wch: 15 },  // Trạng thái
+      ];
+      ws['!cols'] = colWidths;
+
+      // Generate filename with current date
+      const currentDate = format(new Date(), "dd-MM-yyyy");
+      const filename = `Xe-tra-khach_${currentDate}.xlsx`;
+
+      // Write file
+      XLSX.writeFile(wb, filename);
+      
+      toast.success(`Đã xuất Excel thành công: ${filename}`);
+    } catch (error) {
+      console.error("Failed to export Excel:", error);
+      toast.error("Không thể xuất Excel. Vui lòng thử lại sau.");
+    }
+  };
+
   return (
     <div className="space-y-4">
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={loadRecords}
-            disabled={isLoading}
-            className="gap-2"
-          >
-            <RefreshCw className="h-4 w-4" />
-            Làm mới
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExportExcel}
+              disabled={isLoading || filteredRecords.length === 0}
+              className="gap-2"
+            >
+              <FileSpreadsheet className="h-4 w-4" />
+              Xuất Excel
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={loadRecords}
+              disabled={isLoading}
+              className="gap-2"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Làm mới
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
