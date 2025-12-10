@@ -22,7 +22,7 @@ export default function BangGiaHoaDonDienTu() {
     {
       icon: PenTool,
       title: "Cấu hình đúng pháp luật Việt Nam",
-      description: "Sơn Phát đã cấu hình các chuẩn thông tin theo NĐ70/2025, mẫu vé đa dạng, gán logo nhà xe, DNVT trên mẫu vé",
+      description: "ABC đã cấu hình các chuẩn thông tin theo NĐ70/2025, mẫu vé đa dạng, gán logo nhà xe, DNVT trên mẫu vé",
       color: "text-purple-600",
       bgColor: "bg-purple-50",
     },

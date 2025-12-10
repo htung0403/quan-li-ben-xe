@@ -234,10 +234,10 @@ export default function LienHe() {
                                             <div className="flex items-center gap-3">
                                                 <Mail className="h-5 w-5 text-teal-600 flex-shrink-0" />
                                                 <a
-                                                    href="mailto:sonphattn@gmail.com"
+                                                    href="mailto:abctn@gmail.com"
                                                     className="text-teal-600 hover:text-teal-700 hover:underline"
                                                 >
-                                                    sonphattn@gmail.com
+                                                    abctn@gmail.com
                                                 </a>
                                             </div>
 

@@ -22,7 +22,7 @@ export default function HuongDanBanVeUyThac() {
         {/* Introduction */}
         <ArticleContent>
           <p className="text-gray-700 leading-relaxed mb-8">
-            Hiểu về quy trình bán vé ủy thác của bến xe. Trong bài viết này, Sơn Phát C&T sẽ hướng dẫn bạn bán vé ủy thác một cách chi tiết nhất.
+            Hiểu về quy trình bán vé ủy thác của bến xe. Trong bài viết này, ABC C&T sẽ hướng dẫn bạn bán vé ủy thác một cách chi tiết nhất.
           </p>
         </ArticleContent>
 
@@ -42,7 +42,7 @@ export default function HuongDanBanVeUyThac() {
               >
                 https://banve.sbus.vn/
               </a>{" "}
-              tại màn hình đăng nhập anh/chị nhập tài khoản và mật khẩu do Sơn Phát đã cung cấp rồi chọn Đăng Nhập.
+              tại màn hình đăng nhập anh/chị nhập tài khoản và mật khẩu do ABC đã cung cấp rồi chọn Đăng Nhập.
             </p>
           </ArticleContent>
           
@@ -94,7 +94,7 @@ export default function HuongDanBanVeUyThac() {
         {/* Additional Banner/Info Section */}
         <ArticleBanner title="Lưu ý quan trọng" variant="info">
           <ul className="list-disc list-inside space-y-2">
-            <li>Đảm bảo bạn đã đăng nhập với tài khoản được cấp bởi Sơn Phát</li>
+            <li>Đảm bảo bạn đã đăng nhập với tài khoản được cấp bởi ABC</li>
             <li>Kiểm tra thông tin vé trước khi thanh toán</li>
             <li>Liên hệ tổng đài 1900.4751 nếu gặp vấn đề</li>
           </ul>

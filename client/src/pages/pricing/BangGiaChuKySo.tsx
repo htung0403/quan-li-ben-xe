@@ -46,7 +46,7 @@ export default function BangGiaChuKySo() {
                   <li className="flex items-start gap-3 pb-3 border-b border-gray-100">
                     <CheckCircle className="h-6 w-6 text-green-600 mt-0.5 flex-shrink-0" />
                     <span className="text-gray-700 text-base">
-                      <span className="font-bold text-lg">Không giới hạn</span> số lượng lượt ký cho Lệnh vận chuyển điện, vé xe điện tử trên hệ thống của Sơn Phát trong 01 năm
+                      <span className="font-bold text-lg">Không giới hạn</span> số lượng lượt ký cho Lệnh vận chuyển điện, vé xe điện tử trên hệ thống của ABC trong 01 năm
                     </span>
                   </li>
                   <li className="flex items-start gap-3 pb-3 border-b border-gray-100">

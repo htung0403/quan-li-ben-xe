@@ -24,7 +24,7 @@ export default function HomePage() {
               
               <div className="space-y-4 mb-8 text-black ">
                 <p className="text-lg leading-relaxed font-bold">
-                  Công ty cổ phần tư vấn và chuyển giao công nghệ Sơn Phát (Sơn Phát C&T) tập trung 
+                  Công ty ABC tập trung 
                   vào việc nâng cao chất lượng dịch vụ và tiện ích cho hành khách thông qua các giải pháp 
                   công nghệ hiện đại như quản lý thông tin, bán vé trực tuyến và hệ thống thanh toán điện tử.
                 </p>
@@ -94,17 +94,17 @@ export default function HomePage() {
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div>
               <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-6">
-                Sơn Phát C&T
+                ABC C&T
               </h2>
               <div className="space-y-6 text-gray-700 leading-relaxed">
                 <p className="text-lg">
-                  Công ty cổ phần tư vấn và chuyển giao công nghệ Sơn Phát (Sơn Phát C&T) bắt đầu hành trình 
+                  Công ty cổ phần tư vấn và chuyển giao công nghệ ABC (ABC C&T) bắt đầu hành trình 
                   với sự thấu hiểu các khó khăn, nhu cầu của lĩnh vực bến xe khách và vận tải hành khách tuyến cố định.
                 </p>
                 <p className="text-lg">
-                  Trong bối cảnh nhu cầu vận tải hành khách tuyến cố định ngày càng tăng, Sơn Phát C&T đã bắt tay 
+                  Trong bối cảnh nhu cầu vận tải hành khách tuyến cố định ngày càng tăng, ABC C&T đã bắt tay 
                   vào hành trình này với sự thấu hiểu sâu sắc các khó khăn và nhu cầu của thị trường. Bằng cách đặt 
-                  khách hàng làm trung tâm và tìm hiểu các yêu cầu của họ, Sơn Phát C&T đã đưa ra những giải pháp 
+                  khách hàng làm trung tâm và tìm hiểu các yêu cầu của họ, ABC C&T đã đưa ra những giải pháp 
                   tối ưu để cải thiện trải nghiệm của hành khách.
                 </p>
                 <p className="text-xl font-semibold text-primary">

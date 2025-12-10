@@ -60,7 +60,7 @@ const navItems: NavItem[] = [
         ],
       },
       {
-        title: "ĐỐI TÁC SƠN PHÁT",
+        title: "ĐỐI TÁC ABC",
         path: "/products/partner",
         underlineColor: "gray",
         items: [
@@ -151,10 +151,10 @@ export function PublicHeader() {
           <Link to="/" className="flex items-center gap-3">
             <img
               src={logo}
-              alt="SONPHAT C&T"
+              alt="ABC C&T"
               className="h-12 w-auto"
             />
-            <span className="text-xl font-bold text-gray-900">SONPHAT C&T</span>
+            <span className="text-xl font-bold text-gray-900">ABC C&T</span>
           </Link>
 
           {/* Desktop Navigation */}

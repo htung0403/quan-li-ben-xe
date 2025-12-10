@@ -90,11 +90,11 @@ export function PublicFooter() {
             <ul className="space-y-3 text-sm">
               <li>
                 <a
-                  href="mailto:sonphattn@gmail.com"
+                  href="mailto:abctn@gmail.com"
                   className="flex items-center gap-2 hover:text-white transition-colors"
                 >
                   <Mail className="h-4 w-4" />
-                  sonphattn@gmail.com
+                  abctn@gmail.com
                 </a>
               </li>
               <li>
@@ -116,19 +116,19 @@ export function PublicFooter() {
               <li>
                 <p className="font-medium text-white mb-1">Trụ sở chính:</p>
                 <p className="text-gray-400">
-                  Tổ 9, phường Tân Lập, TP Thái Nguyên
+                  ABC
                 </p>
               </li>
               <li>
                 <p className="font-medium text-white mb-1">Văn phòng Miền Trung:</p>
                 <p className="text-gray-400">
-                  Tầng 2, Bến xe Trung Tâm Đà Nẵng, P. Hòa Minh, Q. Liên Chiểu, Đà Nẵng.
+                  ABC
                 </p>
               </li>
               <li>
                 <p className="font-medium text-white mb-1">Văn phòng Miền Nam:</p>
                 <p className="text-gray-400">
-                  Số 43, Đường Nguyễn Trọng Trí, Phường An Lạc A, Quận Bình Tân - TP Hồ Chí Minh
+                  ABC
                 </p>
               </li>
             </ul>
@@ -136,7 +136,7 @@ export function PublicFooter() {
         </div>
 
         <div className="border-t border-gray-700 pt-8 text-center text-sm">
-          <p>&copy; {new Date().getFullYear()} SONPHAT C&T. Tất cả quyền được bảo lưu.</p>
+          <p>&copy; {new Date().getFullYear()} ABC C&T. Tất cả quyền được bảo lưu.</p>
         </div>
       </div>
     </footer>
