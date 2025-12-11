@@ -35,7 +35,31 @@ export const getAllDrivers = async (req: Request, res: Response) => {
 
     if (operatorId) {
       // Filter by operator through junction table or primary operator
-      query = query.or(`operator_id.eq.${operatorId},driver_operators.operator_id.eq.${operatorId}`)
+      // First, get driver IDs from junction table
+      const { data: junctionDrivers } = await supabase
+        .from('driver_operators')
+        .select('driver_id')
+        .eq('operator_id', operatorId as string)
+      
+      const junctionDriverIds = junctionDrivers?.map((d: any) => d.driver_id) || []
+      
+      // Get driver IDs that have this operator as primary
+      const { data: primaryDrivers } = await supabase
+        .from('drivers')
+        .select('id')
+        .eq('operator_id', operatorId as string)
+      
+      const primaryDriverIds = primaryDrivers?.map((d: any) => d.id) || []
+      
+      // Combine all driver IDs and filter
+      const allDriverIds = [...new Set([...primaryDriverIds, ...junctionDriverIds])]
+      
+      if (allDriverIds.length > 0) {
+        query = query.in('id', allDriverIds)
+      } else {
+        // No drivers found, return empty result
+        query = query.eq('id', '00000000-0000-0000-0000-000000000000') // Non-existent ID to return empty
+      }
     }
     if (isActive !== undefined) {
       query = query.eq('is_active', isActive === 'true')
