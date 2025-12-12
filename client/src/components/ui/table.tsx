@@ -1,5 +1,6 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
+import { ArrowUpDown, ArrowUp, ArrowDown } from "lucide-react"
 
 const Table = React.forwardRef<
   HTMLTableElement,
@@ -77,6 +78,56 @@ const TableCell = React.forwardRef<
 ))
 TableCell.displayName = "TableCell"
 
+interface SortableTableHeadProps extends React.ThHTMLAttributes<HTMLTableCellElement> {
+  sortKey: string
+  currentSortColumn: string | null
+  sortDirection: "asc" | "desc"
+  onSort: (column: string) => void
+  children: React.ReactNode
+}
+
+const SortableTableHead = React.forwardRef<
+  HTMLTableCellElement,
+  SortableTableHeadProps
+>(({ sortKey, currentSortColumn, sortDirection, onSort, children, className, ...props }, ref) => {
+  const handleClick = () => {
+    onSort(sortKey)
+  }
+
+  const isActive = currentSortColumn === sortKey
+
+  return (
+    <th
+      ref={ref}
+      className={cn(
+        "h-12 px-4 text-left align-middle font-medium text-gray-500 [&:has([role=checkbox])]:pr-0",
+        className
+      )}
+      {...props}
+    >
+      <button
+        onClick={handleClick}
+        className={cn(
+          "flex items-center gap-2 hover:text-indigo-600 transition-colors cursor-pointer w-full",
+          className?.includes("text-center") ? "justify-center" : "text-left"
+        )}
+      >
+        {children}
+        {isActive ? (
+          sortDirection === "asc" ? (
+            <ArrowUp className="h-4 w-4 text-indigo-600" />
+          ) : (
+            <ArrowDown className="h-4 w-4 text-indigo-600" />
+          )
+        ) : (
+          <ArrowUpDown className="h-4 w-4 opacity-50" />
+        )}
+      </button>
+    </th>
+  )
+})
+SortableTableHead.displayName = "SortableTableHead"
+
 export {
   Table,
   TableHeader,
@@ -84,5 +135,6 @@ export {
   TableHead,
   TableRow,
   TableCell,
+  SortableTableHead,
 }
 

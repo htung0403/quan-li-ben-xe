@@ -77,7 +77,12 @@ export const getAllDispatchRecords = async (req: Request, res: Response) => {
 
     const { data: routes } = routeIds.length > 0 ? await supabase
       .from('routes')
-      .select('id, route_name, route_type')
+      .select(`
+        id, 
+        route_name, 
+        route_type,
+        destination:destination_id(id, name, code)
+      `)
       .in('id', routeIds) : { data: [] }
 
     const { data: users } = userIds.length > 0 ? await supabase
@@ -102,11 +107,20 @@ export const getAllDispatchRecords = async (req: Request, res: Response) => {
     }) || [])
     const driverMap = new Map(drivers?.map((d: any) => [d.id, d.full_name]) || [])
     const routeMap = new Map(routes?.map((r: any) => [r.id, r.route_name]) || [])
-    const routeDataMap = new Map(routes?.map((r: any) => [r.id, {
-      id: r.id,
-      routeName: r.route_name,
-      routeType: r.route_type,
-    }]) || [])
+    const routeDataMap = new Map(routes?.map((r: any) => {
+      const destinationData = Array.isArray(r.destination) ? r.destination[0] : r.destination
+      const destination = destinationData ? {
+        id: destinationData.id,
+        name: destinationData.name,
+        code: destinationData.code,
+      } : undefined
+      return [r.id, {
+        id: r.id,
+        routeName: r.route_name,
+        routeType: r.route_type,
+        destination: destination,
+      }]
+    }) || [])
     const userMap = new Map(users?.map((u: any) => [u.id, u.full_name]) || [])
 
     const result = records.map((record: any) => {

@@ -16,6 +16,7 @@ import dispatchRoutes from './routes/dispatch.routes.js'
 import violationRoutes from './routes/violation.routes.js'
 import invoiceRoutes from './routes/invoice.routes.js'
 import serviceChargeRoutes from './routes/service-charge.routes.js'
+import serviceRoutes from './routes/service.routes.js'
 import reportRoutes from './routes/report.routes.js'
 import dashboardRoutes from './routes/dashboard.routes.js'
 import uploadRoutes from './routes/upload.routes.js'
@@ -86,6 +87,7 @@ app.use('/api/dispatch', dispatchRoutes)
 app.use('/api/violations', violationRoutes)
 app.use('/api/invoices', invoiceRoutes)
 app.use('/api/service-charges', serviceChargeRoutes)
+app.use('/api/services', serviceRoutes)
 app.use('/api/reports', reportRoutes)
 app.use('/api/dashboard', dashboardRoutes)
 app.use('/api/upload', uploadRoutes)

@@ -17,6 +17,8 @@ import QuanLyLaiXe from "@/pages/QuanLyLaiXe"
 import QuanLyDonViVanTai from "@/pages/QuanLyDonViVanTai"
 import QuanLyTuyen from "@/pages/QuanLyTuyen"
 import QuanLyBenDen from "@/pages/QuanLyBenDen"
+import QuanLyDichVu from "@/pages/QuanLyDichVu"
+import DanhSachCaTruc from "@/pages/DanhSachCaTruc"
 import BaoCao from "@/pages/BaoCao"
 import Profile from "@/pages/Profile"
 import BangGiaVeDienTu from "@/pages/pricing/BangGiaVeDienTu"
@@ -29,11 +31,24 @@ import XeXuatBen from "@/pages/XeXuatBen"
 import XeTraKhach from "@/pages/XeTraKhach"
 import XeKhongDuDieuKien from "@/pages/XeKhongDuDieuKien"
 import BaoCaoXeTraKhach from "@/pages/BaoCaoXeTraKhach"
+import BaoCaoTheoDoiLenhXuatBen from "@/pages/BaoCaoTheoDoiLenhXuatBen"
 import BaoCaoTongHopTuyen from "@/pages/BaoCaoTongHopTuyen"
 import BaoCaoTongHop from "@/pages/BaoCaoTongHop"
 import BaoCaoDoanhThuBenBanVe from "@/pages/BaoCaoDoanhThuBenBanVe"
 import BaoCaoCapPhepRaBen from "@/pages/BaoCaoCapPhepRaBen"
+import BaoCaoTheoDoiLenhTraKhach from "@/pages/BaoCaoTheoDoiLenhTraKhach"
+import BaoCaoNhatTrinhXe from "@/pages/BaoCaoNhatTrinhXe"
+import BaoCaoXeDiThay from "@/pages/BaoCaoXeDiThay"
+import BaoCaoXeKhongDuDieuKien from "@/pages/BaoCaoXeKhongDuDieuKien"
+import BaoCaoXeRaVaoBen from "@/pages/BaoCaoXeRaVaoBen"
+import BaoCaoXeTangCuong from "@/pages/BaoCaoXeTangCuong"
 import BaoCaoChamCongDangTai from "@/pages/BaoCaoChamCongDangTai"
+import LapBaoCao from "@/pages/LapBaoCao"
+import BaoCaoTinhHinhHoatDongMau1 from "@/pages/BaoCaoTinhHinhHoatDongMau1"
+import BaoCaoTinhHinhHoatDongMau3 from "@/pages/BaoCaoTinhHinhHoatDongMau3"
+import BangKeDoanhThu from "@/pages/BangKeDoanhThu"
+import BangKeDoanhThu02 from "@/pages/BangKeDoanhThu02"
+import BangKeHoaDon from "@/pages/BangKeHoaDon"
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading, checkAuth } = useAuthStore()
@@ -221,6 +236,26 @@ function App() {
           }
         />
         <Route
+          path="/quan-ly-dich-vu"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <QuanLyDichVu />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/danh-sach-ca-truc"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <DanhSachCaTruc />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/bao-cao"
           element={
             <ProtectedRoute>
@@ -236,6 +271,16 @@ function App() {
             <ProtectedRoute>
               <MainLayout>
                 <BaoCaoXeTraKhach />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/bao-cao/theo-doi-lenh-xuat-ben"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <BaoCaoTheoDoiLenhXuatBen />
               </MainLayout>
             </ProtectedRoute>
           }
@@ -281,11 +326,131 @@ function App() {
           }
         />
         <Route
+          path="/bao-cao/theo-doi-lenh-tra-khach"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <BaoCaoTheoDoiLenhTraKhach />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/bao-cao/nhat-trinh-xe"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <BaoCaoNhatTrinhXe />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/bao-cao/xe-di-thay"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <BaoCaoXeDiThay />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/bao-cao/xe-khong-du-dieu-kien"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <BaoCaoXeKhongDuDieuKien />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/bao-cao/xe-ra-vao-ben"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <BaoCaoXeRaVaoBen />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/bao-cao/xe-tang-cuong"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <BaoCaoXeTangCuong />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/bao-cao/cham-cong-dang-tai"
           element={
             <ProtectedRoute>
               <MainLayout>
                 <BaoCaoChamCongDangTai />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/bao-cao/lap-bao-cao"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <LapBaoCao />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/bao-cao/tinh-hinh-hoat-dong-mau-1"
+          element={
+            <ProtectedRoute>
+              <MainLayout disablePadding>
+                <BaoCaoTinhHinhHoatDongMau1 />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/bao-cao/tinh-hinh-hoat-dong-mau-3"
+          element={
+            <ProtectedRoute>
+              <MainLayout disablePadding>
+                <BaoCaoTinhHinhHoatDongMau3 />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/bao-cao/bang-ke-doanh-thu"
+          element={
+            <ProtectedRoute>
+              <MainLayout disablePadding>
+                <BangKeDoanhThu />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/bao-cao/bang-ke-doanh-thu-02-rut-gon"
+          element={
+            <ProtectedRoute>
+              <MainLayout disablePadding>
+                <BangKeDoanhThu02 />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/bao-cao/bang-ke-hoa-don"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <BangKeHoaDon />
               </MainLayout>
             </ProtectedRoute>
           }

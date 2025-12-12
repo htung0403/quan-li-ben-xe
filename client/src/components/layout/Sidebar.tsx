@@ -21,6 +21,10 @@ import {
   ShieldCheck,
   Database,
   MapPin,
+  FileText,
+  Plus,
+  CarFront,
+  Package,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/auth.store";
@@ -59,7 +63,16 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
   ];
 
   const baoCaoSubmenu = [
+    { name: "Lập báo cáo", href: "/bao-cao/lap-bao-cao", icon: FileText, flip: false },
+    { name: "Bảng kê hóa đơn", href: "/bao-cao/bang-ke-hoa-don", icon: FileText, flip: false },
     { name: "Xe trả khách", href: "/bao-cao/xe-tra-khach", icon: FastForward, flip: true },
+    { name: "Theo dõi lệnh xuất bến", href: "/bao-cao/theo-doi-lenh-xuat-ben", icon: FileText, flip: false },
+    { name: "Theo dõi lệnh trả khách", href: "/bao-cao/theo-doi-lenh-tra-khach", icon: FileText, flip: false },
+    { name: "Nhật trình xe", href: "/bao-cao/nhat-trinh-xe", icon: FileText, flip: false },
+    { name: "Xe đi thay", href: "/bao-cao/xe-di-thay", icon: Bus, flip: false },
+    { name: "Xe không đủ điều kiện", href: "/bao-cao/xe-khong-du-dieu-kien", icon: OctagonX, flip: false },
+    { name: "Xe ra vào bến", href: "/bao-cao/xe-ra-vao-ben", icon: Bus, flip: false },
+    { name: "Xe tăng cường", href: "/bao-cao/xe-tang-cuong", icon: BusPlusIcon, flip: false },
     { name: "Báo cáo tổng hợp tuyến", href: "/bao-cao/tong-hop-tuyen", icon: Route, flip: false },
     { name: "Báo cáo tổng hợp", href: "/bao-cao/tong-hop", icon: BarChart3, flip: false },
     { name: "Doanh thu bến bán vé", href: "/bao-cao/doanh-thu-ben-ban-ve", icon: DollarSign, flip: false },
@@ -73,6 +86,8 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     { name: "Đơn vị vận tải", href: "/quan-ly-don-vi-van-tai", icon: Building2, flip: false },
     { name: "Quản lý tuyến", href: "/quan-ly-tuyen", icon: Route, flip: false },
     { name: "Bến đến", href: "/quan-ly-ben-den", icon: MapPin, flip: false },
+    { name: "Quản lý dịch vụ", href: "/quan-ly-dich-vu", icon: Package, flip: false },
+    { name: "Danh sách ca trực", href: "/danh-sach-ca-truc", icon: CalendarClock, flip: false },
   ];
 
   return (
@@ -300,5 +315,16 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         </div>
       </aside>
     </>
+  );
+}
+
+function BusPlusIcon({ className = "" }: { className?: string }) {
+  return (
+    <div className={`relative inline-flex h-5 w-5 ${className}`}>
+      <CarFront className="h-5 w-5" />
+      <div className="absolute -bottom-0.5 -right-0.5 bg-white rounded-full p-0.5">
+        <Plus className="h-2.5 w-2.5" strokeWidth={3} />
+      </div>
+    </div>
   );
 }

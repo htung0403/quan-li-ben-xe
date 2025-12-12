@@ -23,7 +23,7 @@ import { useUIStore } from "@/store/ui.store";
 import { formatVietnamDateTime } from "@/lib/vietnam-time";
 import { DatePickerRange } from "@/components/DatePickerRange";
 
-export default function BaoCaoXeTraKhach() {
+export default function BaoCaoTheoDoiLenhXuatBen() {
   const setTitle = useUIStore((state) => state.setTitle);
   const [records, setRecords] = useState<DispatchRecord[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -35,7 +35,7 @@ export default function BaoCaoXeTraKhach() {
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
   useEffect(() => {
-    setTitle("Báo cáo > Xe trả khách");
+    setTitle("Báo cáo > Theo dõi lệnh xuất bến");
     loadRecords();
     loadOperators();
   }, [setTitle]);
@@ -44,9 +44,9 @@ export default function BaoCaoXeTraKhach() {
     setIsLoading(true);
     try {
       const data = await dispatchService.getAll();
-      // Chỉ lấy các xe đã trả khách
-      const filtered = data.filter((item) =>
-        item.currentStatus === "passengers_dropped"
+      // Lấy tất cả các lệnh có mã lệnh (transportOrderCode) hoặc đã có giờ XB kế hoạch
+      const filtered = data.filter(
+        (item) => item.transportOrderCode || item.plannedDepartureTime
       );
       setRecords(filtered);
     } catch (error) {
@@ -64,6 +64,19 @@ export default function BaoCaoXeTraKhach() {
     } catch (error) {
       console.error("Failed to load operators:", error);
     }
+  };
+
+  const getStatusLabel = (status?: string) => {
+    const statusMap: Record<string, string> = {
+      entered: "Đã vào bến",
+      passengers_dropped: "Đã trả khách",
+      permit_issued: "Đã cấp phép",
+      permit_rejected: "Từ chối cấp phép",
+      paid: "Đã thanh toán",
+      departure_ordered: "Đã xuất lệnh",
+      departed: "Đã xuất bến",
+    };
+    return statusMap[status || ""] || status || "-";
   };
 
   const handleSort = (column: string) => {
@@ -85,29 +98,32 @@ export default function BaoCaoXeTraKhach() {
 
   const filteredRecords = useMemo(() => {
     let filtered = records.filter((item) => {
-      // Full text search - search in both plate number and route name
+      // Full text search - search in plate number, order code, and route name
       let matchesSearch = true;
       if (searchQuery.trim()) {
         const query = searchQuery.toLowerCase();
         const plateMatch = item.vehiclePlateNumber
           .toLowerCase()
           .includes(query);
+        const orderCodeMatch = (item.transportOrderCode || "")
+          .toLowerCase()
+          .includes(query);
         const routeMatch = (item.routeName || "")
           .toLowerCase()
           .includes(query);
-        matchesSearch = plateMatch || routeMatch;
+        matchesSearch = plateMatch || orderCodeMatch || routeMatch;
       }
-      
+
       // Filter by operator
       let matchesOperator = true;
       if (selectedOperatorId) {
         matchesOperator = item.vehicle?.operatorId === selectedOperatorId;
       }
-      
-      // Filter by date range (using passengerDropTime)
+
+      // Filter by date range (using plannedDepartureTime)
       let matchesDate = true;
       if (dateRange?.from && dateRange?.to) {
-        const filterDate = item.passengerDropTime;
+        const filterDate = item.plannedDepartureTime;
         if (filterDate) {
           const itemDate = new Date(filterDate);
           const fromDate = new Date(dateRange.from);
@@ -119,7 +135,7 @@ export default function BaoCaoXeTraKhach() {
           matchesDate = false;
         }
       } else if (dateRange?.from) {
-        const filterDate = item.passengerDropTime;
+        const filterDate = item.plannedDepartureTime;
         if (filterDate) {
           const itemDate = new Date(filterDate);
           const fromDate = new Date(dateRange.from);
@@ -129,7 +145,7 @@ export default function BaoCaoXeTraKhach() {
           matchesDate = false;
         }
       }
-      
+
       return matchesSearch && matchesOperator && matchesDate;
     });
 
@@ -148,37 +164,25 @@ export default function BaoCaoXeTraKhach() {
             aValue = a.transportOrderCode || a.id.substring(0, 8) || "";
             bValue = b.transportOrderCode || b.id.substring(0, 8) || "";
             break;
-          case "operatorName":
-            aValue = a.vehicle?.operator?.name || "";
-            bValue = b.vehicle?.operator?.name || "";
-            break;
-          case "routeName":
-            aValue = a.routeName || "";
-            bValue = b.routeName || "";
+          case "destination":
+            aValue = a.route?.destination?.name || "";
+            bValue = b.route?.destination?.name || "";
             break;
           case "routeType":
             aValue = a.route?.routeType || "";
             bValue = b.route?.routeType || "";
             break;
-          case "passengerDropBy":
-            aValue = a.passengerDropBy || "";
-            bValue = b.passengerDropBy || "";
+          case "plannedDepartureTime":
+            aValue = a.plannedDepartureTime ? new Date(a.plannedDepartureTime).getTime() : 0;
+            bValue = b.plannedDepartureTime ? new Date(b.plannedDepartureTime).getTime() : 0;
             break;
           case "passengerDropTime":
             aValue = a.passengerDropTime ? new Date(a.passengerDropTime).getTime() : 0;
             bValue = b.passengerDropTime ? new Date(b.passengerDropTime).getTime() : 0;
             break;
-          case "passengersArrived":
-            aValue = a.passengersArrived ?? a.seatCount ?? 0;
-            bValue = b.passengersArrived ?? b.seatCount ?? 0;
-            break;
-          case "permitStatus":
-            aValue = a.permitStatus === "approved" ? "Đã ký" : a.permitStatus === "rejected" ? "Từ chối" : "-";
-            bValue = b.permitStatus === "approved" ? "Đã ký" : b.permitStatus === "rejected" ? "Từ chối" : "-";
-            break;
-          case "syncStatus":
-            aValue = a.metadata?.syncStatus || (a.metadata?.syncTime ? "Đã đồng bộ" : "Chưa đồng bộ");
-            bValue = b.metadata?.syncStatus || (b.metadata?.syncTime ? "Đã đồng bộ" : "Chưa đồng bộ");
+          case "currentStatus":
+            aValue = getStatusLabel(a.currentStatus);
+            bValue = getStatusLabel(b.currentStatus);
             break;
           default:
             return 0;
@@ -205,17 +209,8 @@ export default function BaoCaoXeTraKhach() {
     return filtered;
   }, [records, searchQuery, dateRange, selectedOperatorId, sortColumn, sortDirection]);
 
-  const renderTime = (value?: string) => (value ? formatVietnamDateTime(value) : "-");
-
-  const totalPassengers = useMemo(() => {
-    return filteredRecords.reduce((sum, item) => {
-      const value = item.passengersArrived ?? item.seatCount;
-      if (typeof value === "number") {
-        return sum + value;
-      }
-      return sum;
-    }, 0);
-  }, [filteredRecords]);
+  const renderTime = (value?: string) =>
+    value ? formatVietnamDateTime(value) : "-";
 
   const handleExportExcel = () => {
     if (filteredRecords.length === 0) {
@@ -227,48 +222,44 @@ export default function BaoCaoXeTraKhach() {
       // Prepare data for Excel
       const excelData = filteredRecords.map((item, index) => ({
         "STT": index + 1,
-        "Biển số": item.vehiclePlateNumber || "-",
-        "Biển số khi vào": item.vehiclePlateNumber || "-",
-        "Mã lệnh trả khách": item.transportOrderCode || item.id.substring(0, 8) || "-",
-        "Tên đơn vị": item.vehicle?.operator?.name || "-",
-        "Tên luồng tuyến": item.routeName || "-",
-        "Loại tuyến": "-",
-        "Người xác nhận trả khách": item.passengerDropBy || "-",
-        "Thời gian trả khách": item.passengerDropTime ? format(new Date(item.passengerDropTime), "dd/MM/yyyy HH:mm") : "-",
-        "Số khách": item.passengersArrived ?? item.seatCount ?? "-",
-        "Trạng thái ký lệnh vận chuyển": item.permitStatus === "approved" ? "Đã ký" : item.permitStatus === "rejected" ? "Từ chối" : "-",
-        "Trạng thái đồng bộ dữ liệu": item.metadata?.syncStatus || (item.metadata?.syncTime ? "Đã đồng bộ" : "Chưa đồng bộ"),
+        "Biển kiểm soát": item.vehiclePlateNumber || "-",
+        "Mã lệnh": item.transportOrderCode || item.id.substring(0, 8) || "-",
+        "Bến đến": item.route?.destination?.name || "-",
+        "Loại lệnh": item.route?.routeType || "-",
+        "Giờ XB kế hoạch": item.plannedDepartureTime
+          ? format(new Date(item.plannedDepartureTime), "dd/MM/yyyy HH:mm")
+          : "-",
+        "Giờ xác nhận trả khách": item.passengerDropTime
+          ? format(new Date(item.passengerDropTime), "dd/MM/yyyy HH:mm")
+          : "-",
+        "Trạng thái lệnh": getStatusLabel(item.currentStatus),
       }));
 
       // Create workbook and worksheet
       const ws = XLSX.utils.json_to_sheet(excelData);
       const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Báo cáo xe trả khách");
+      XLSX.utils.book_append_sheet(wb, ws, "Theo dõi lệnh xuất bến");
 
       // Set column widths
       const colWidths = [
-        { wch: 5 },   // STT
-        { wch: 15 },  // Biển số
-        { wch: 15 },  // Biển số khi vào
-        { wch: 18 },  // Mã lệnh trả khách
-        { wch: 25 },  // Tên đơn vị
-        { wch: 25 },  // Tên luồng tuyến
-        { wch: 15 },  // Loại tuyến
-        { wch: 25 },  // Người xác nhận trả khách
-        { wch: 20 },  // Thời gian trả khách
-        { wch: 10 },  // Số khách
-        { wch: 25 },  // Trạng thái ký lệnh vận chuyển
-        { wch: 20 },  // Trạng thái đồng bộ dữ liệu
+        { wch: 5 }, // STT
+        { wch: 15 }, // Biển kiểm soát
+        { wch: 18 }, // Mã lệnh
+        { wch: 25 }, // Bến đến
+        { wch: 15 }, // Loại lệnh
+        { wch: 20 }, // Giờ XB kế hoạch
+        { wch: 25 }, // Giờ xác nhận trả khách
+        { wch: 20 }, // Trạng thái lệnh
       ];
-      ws['!cols'] = colWidths;
+      ws["!cols"] = colWidths;
 
       // Generate filename with current date
       const currentDate = format(new Date(), "dd-MM-yyyy");
-      const filename = `Bao-cao-xe-tra-khach_${currentDate}.xlsx`;
+      const filename = `Theo-doi-lenh-xuat-ben_${currentDate}.xlsx`;
 
       // Write file
       XLSX.writeFile(wb, filename);
-      
+
       toast.success(`Đã xuất Excel thành công: ${filename}`);
     } catch (error) {
       console.error("Failed to export Excel:", error);
@@ -308,7 +299,7 @@ export default function BaoCaoXeTraKhach() {
             <div className="flex items-center gap-2">
               <Search className="h-4 w-4 text-gray-500" />
               <Input
-                placeholder="Tìm kiếm biển số xe, luồng tuyến..."
+                placeholder="Tìm kiếm biển số, mã lệnh, tuyến..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -346,15 +337,7 @@ export default function BaoCaoXeTraKhach() {
                     sortDirection={sortDirection}
                     onSort={handleSort}
                   >
-                    Biển số
-                  </SortableTableHead>
-                  <SortableTableHead
-                    sortKey="vehiclePlateNumber"
-                    currentSortColumn={sortColumn}
-                    sortDirection={sortDirection}
-                    onSort={handleSort}
-                  >
-                    Biển số khi vào
+                    Biển kiểm soát
                   </SortableTableHead>
                   <SortableTableHead
                     sortKey="transportOrderCode"
@@ -362,23 +345,15 @@ export default function BaoCaoXeTraKhach() {
                     sortDirection={sortDirection}
                     onSort={handleSort}
                   >
-                    Mã lệnh trả khách
+                    Mã lệnh
                   </SortableTableHead>
                   <SortableTableHead
-                    sortKey="operatorName"
+                    sortKey="destination"
                     currentSortColumn={sortColumn}
                     sortDirection={sortDirection}
                     onSort={handleSort}
                   >
-                    Tên đơn vị
-                  </SortableTableHead>
-                  <SortableTableHead
-                    sortKey="routeName"
-                    currentSortColumn={sortColumn}
-                    sortDirection={sortDirection}
-                    onSort={handleSort}
-                  >
-                    Tên luồng tuyến
+                    Bến đến
                   </SortableTableHead>
                   <SortableTableHead
                     sortKey="routeType"
@@ -386,15 +361,15 @@ export default function BaoCaoXeTraKhach() {
                     sortDirection={sortDirection}
                     onSort={handleSort}
                   >
-                    Loại tuyến
+                    Loại lệnh
                   </SortableTableHead>
                   <SortableTableHead
-                    sortKey="passengerDropBy"
+                    sortKey="plannedDepartureTime"
                     currentSortColumn={sortColumn}
                     sortDirection={sortDirection}
                     onSort={handleSort}
                   >
-                    Người xác nhận trả khách
+                    Giờ XB kế hoạch
                   </SortableTableHead>
                   <SortableTableHead
                     sortKey="passengerDropTime"
@@ -402,44 +377,28 @@ export default function BaoCaoXeTraKhach() {
                     sortDirection={sortDirection}
                     onSort={handleSort}
                   >
-                    Thời gian trả khách
+                    Giờ xác nhận trả khách
                   </SortableTableHead>
                   <SortableTableHead
-                    sortKey="passengersArrived"
+                    sortKey="currentStatus"
                     currentSortColumn={sortColumn}
                     sortDirection={sortDirection}
                     onSort={handleSort}
                   >
-                    Số khách
-                  </SortableTableHead>
-                  <SortableTableHead
-                    sortKey="permitStatus"
-                    currentSortColumn={sortColumn}
-                    sortDirection={sortDirection}
-                    onSort={handleSort}
-                  >
-                    Trạng thái ký lệnh vận chuyển
-                  </SortableTableHead>
-                  <SortableTableHead
-                    sortKey="syncStatus"
-                    currentSortColumn={sortColumn}
-                    sortDirection={sortDirection}
-                    onSort={handleSort}
-                  >
-                    Trạng thái đồng bộ dữ liệu
+                    Trạng thái lệnh
                   </SortableTableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={11} className="text-center text-gray-500">
+                    <TableCell colSpan={7} className="text-center text-gray-500">
                       Đang tải dữ liệu...
                     </TableCell>
                   </TableRow>
                 ) : filteredRecords.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={11} className="text-center text-gray-500">
+                    <TableCell colSpan={7} className="text-center text-gray-500">
                       Không có dữ liệu
                     </TableCell>
                   </TableRow>
@@ -451,41 +410,30 @@ export default function BaoCaoXeTraKhach() {
                           {item.vehiclePlateNumber || "-"}
                         </TableCell>
                         <TableCell>
-                          {item.vehiclePlateNumber || "-"}
+                          {item.transportOrderCode ||
+                            item.id.substring(0, 8) ||
+                            "-"}
                         </TableCell>
                         <TableCell>
-                          {item.transportOrderCode || item.id.substring(0, 8) || "-"}
+                          {item.route?.destination?.name || "-"}
+                        </TableCell>
+                        <TableCell>{item.route?.routeType || "-"}</TableCell>
+                        <TableCell>
+                          {renderTime(item.plannedDepartureTime)}
                         </TableCell>
                         <TableCell>
-                          {item.vehicle?.operator?.name || "-"}
-                        </TableCell>
-                        <TableCell>{item.routeName || "-"}</TableCell>
-                        <TableCell>
-                          {item.route?.routeType || "-"}
-                        </TableCell>
-                        <TableCell>{item.passengerDropBy || "-"}</TableCell>
-                        <TableCell>{renderTime(item.passengerDropTime)}</TableCell>
-                        <TableCell>
-                          {item.passengersArrived ?? item.seatCount ?? "-"}
+                          {renderTime(item.passengerDropTime)}
                         </TableCell>
                         <TableCell>
-                          {item.permitStatus === "approved" ? "Đã ký" : 
-                           item.permitStatus === "rejected" ? "Từ chối" : "-"}
-                        </TableCell>
-                        <TableCell>
-                          {item.metadata?.syncStatus || (item.metadata?.syncTime ? "Đã đồng bộ" : "Chưa đồng bộ")}
+                          {getStatusLabel(item.currentStatus)}
                         </TableCell>
                       </TableRow>
                     ))}
                     <TableRow className="bg-gray-50 font-semibold">
                       <TableCell>
-                        {`Tổng: ${filteredRecords.length} xe`}
+                        {`Tổng: ${filteredRecords.length} lệnh`}
                       </TableCell>
-                      <TableCell colSpan={7}></TableCell>
-                      <TableCell>
-                        {totalPassengers > 0 ? totalPassengers : "-"}
-                      </TableCell>
-                      <TableCell colSpan={2}></TableCell>
+                      <TableCell colSpan={6}></TableCell>
                     </TableRow>
                   </>
                 )}

@@ -21,19 +21,20 @@ import { useUIStore } from "@/store/ui.store";
 import { DatePickerRange } from "@/components/DatePickerRange";
 import { formatVietnamDateTime } from "@/lib/vietnam-time";
 
-interface PermitData {
+interface VehicleLogData {
   plateNumber: string;
   operatorName: string;
+  orderCode: string;
   routeName: string;
   entryTime: string;
-  permitTime: string;
-  permitBy: string;
-  exitTime: string;
+  entryBy: string;
+  permitStatus: string;
+  syncStatus: string;
 }
 
-export default function BaoCaoCapPhepRaBen() {
+export default function BaoCaoNhatTrinhXe() {
   const setTitle = useUIStore((state) => state.setTitle);
-  const [data, setData] = useState<PermitData[]>([]);
+  const [data, setData] = useState<VehicleLogData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
@@ -41,7 +42,7 @@ export default function BaoCaoCapPhepRaBen() {
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
   useEffect(() => {
-    setTitle("Báo cáo > Cấp phép ra bến");
+    setTitle("Báo cáo > Nhật trình xe");
   }, [setTitle]);
 
   useEffect(() => {
@@ -64,39 +65,74 @@ export default function BaoCaoCapPhepRaBen() {
         toDate.setHours(23, 59, 59, 999);
         
         filteredRecords = dispatchRecords.filter((record) => {
-          // Filter by permit time if available, otherwise by entry time
-          const filterDate = record.boardingPermitTime || record.entryTime;
-          if (filterDate) {
-            const recordDate = new Date(filterDate);
+          if (record.entryTime) {
+            const recordDate = new Date(record.entryTime);
             return recordDate >= fromDate && recordDate <= toDate;
           }
           return false;
         });
       }
 
-      // Only show records that have been issued a permit (approved)
-      const permitRecords = filteredRecords.filter(
-        (record) => record.boardingPermitTime && record.permitStatus === "approved"
-      );
-
-      // Map to permit data
-      const result = permitRecords.map((record) => ({
+      // Map to vehicle log data
+      const result = filteredRecords.map((record) => ({
         plateNumber: record.vehiclePlateNumber || "-",
         operatorName: record.vehicle?.operator?.name || "-",
+        orderCode: record.transportOrderCode || "-",
         routeName: record.routeName || "-",
         entryTime: record.entryTime || "-",
-        permitTime: record.boardingPermitTime || "-",
-        permitBy: record.boardingPermitBy || "-",
-        exitTime: record.exitTime || "-",
+        entryBy: record.entryBy || "-",
+        permitStatus: getPermitStatusLabel(record.permitStatus),
+        syncStatus: getSyncStatus(record),
       }));
 
       setData(result);
     } catch (error) {
-      console.error("Failed to load permit data:", error);
+      console.error("Failed to load vehicle log data:", error);
       toast.error("Không thể tải dữ liệu báo cáo");
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const getPermitStatusLabel = (permitStatus?: string): string => {
+    if (!permitStatus) return "Chưa ký";
+    
+    switch (permitStatus) {
+      case "approved":
+        return "Đã ký";
+      case "rejected":
+        return "Từ chối";
+      case "pending":
+        return "Chờ ký";
+      default:
+        return permitStatus;
+    }
+  };
+
+  const getSyncStatus = (record: any): string => {
+    // Check if data has been synced based on metadata or other indicators
+    // For now, we'll use a simple logic: if the record has been updated recently and has key fields filled
+    if (record.metadata?.synced === true) {
+      return "Đã đồng bộ";
+    }
+    
+    // If record has transport order code and permit status, consider it synced
+    if (record.transportOrderCode && record.permitStatus === "approved") {
+      return "Đã đồng bộ";
+    }
+    
+    // If record has been updated recently (within last hour), consider it syncing
+    if (record.updatedAt) {
+      const updatedTime = new Date(record.updatedAt).getTime();
+      const now = new Date().getTime();
+      const diffHours = (now - updatedTime) / (1000 * 60 * 60);
+      
+      if (diffHours < 1) {
+        return "Đang đồng bộ";
+      }
+    }
+    
+    return "Chưa đồng bộ";
   };
 
   const handleSort = (column: string) => {
@@ -124,6 +160,7 @@ export default function BaoCaoCapPhepRaBen() {
         return (
           item.plateNumber.toLowerCase().includes(query) ||
           item.operatorName.toLowerCase().includes(query) ||
+          item.orderCode.toLowerCase().includes(query) ||
           item.routeName.toLowerCase().includes(query)
         );
       }
@@ -145,6 +182,10 @@ export default function BaoCaoCapPhepRaBen() {
             aValue = a.operatorName || "";
             bValue = b.operatorName || "";
             break;
+          case "orderCode":
+            aValue = a.orderCode || "";
+            bValue = b.orderCode || "";
+            break;
           case "routeName":
             aValue = a.routeName || "";
             bValue = b.routeName || "";
@@ -153,17 +194,17 @@ export default function BaoCaoCapPhepRaBen() {
             aValue = a.entryTime !== "-" ? new Date(a.entryTime).getTime() : 0;
             bValue = b.entryTime !== "-" ? new Date(b.entryTime).getTime() : 0;
             break;
-          case "permitTime":
-            aValue = a.permitTime !== "-" ? new Date(a.permitTime).getTime() : 0;
-            bValue = b.permitTime !== "-" ? new Date(b.permitTime).getTime() : 0;
+          case "entryBy":
+            aValue = a.entryBy || "";
+            bValue = b.entryBy || "";
             break;
-          case "permitBy":
-            aValue = a.permitBy || "";
-            bValue = b.permitBy || "";
+          case "permitStatus":
+            aValue = a.permitStatus || "";
+            bValue = b.permitStatus || "";
             break;
-          case "exitTime":
-            aValue = a.exitTime !== "-" ? new Date(a.exitTime).getTime() : 0;
-            bValue = b.exitTime !== "-" ? new Date(b.exitTime).getTime() : 0;
+          case "syncStatus":
+            aValue = a.syncStatus || "";
+            bValue = b.syncStatus || "";
             break;
           default:
             return 0;
@@ -202,40 +243,38 @@ export default function BaoCaoCapPhepRaBen() {
         "STT": index + 1,
         "Biển số": item.plateNumber,
         "Tên đơn vị": item.operatorName,
+        "Mã lệnh xuất bến": item.orderCode,
         "Tên luồng tuyến": item.routeName,
-        "Thời gian vào bến": item.entryTime !== "-" 
-          ? format(new Date(item.entryTime), "dd/MM/yyyy HH:mm") 
+        "Thời gian vào bến": item.entryTime !== "-"
+          ? format(new Date(item.entryTime), "dd/MM/yyyy HH:mm")
           : "-",
-        "Thời gian cấp phép ra bến": item.permitTime !== "-"
-          ? format(new Date(item.permitTime), "dd/MM/yyyy HH:mm")
-          : "-",
-        "Người cấp phép ra bến": item.permitBy,
-        "Thời gian ra bến": item.exitTime !== "-"
-          ? format(new Date(item.exitTime), "dd/MM/yyyy HH:mm")
-          : "-",
+        "Người cho xe vào bến": item.entryBy,
+        "Trạng thái ký lệnh vận chuyển": item.permitStatus,
+        "Trạng thái đồng bộ dữ liệu": item.syncStatus,
       }));
 
       // Create workbook and worksheet
       const ws = XLSX.utils.json_to_sheet(excelData);
       const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Cấp phép ra bến");
+      XLSX.utils.book_append_sheet(wb, ws, "Nhật trình xe");
 
       // Set column widths
       const colWidths = [
         { wch: 5 },   // STT
         { wch: 15 },  // Biển số
         { wch: 25 },  // Tên đơn vị
+        { wch: 20 },  // Mã lệnh xuất bến
         { wch: 25 },  // Tên luồng tuyến
         { wch: 20 },  // Thời gian vào bến
-        { wch: 25 },  // Thời gian cấp phép ra bến
-        { wch: 25 },  // Người cấp phép ra bến
-        { wch: 20 },  // Thời gian ra bến
+        { wch: 25 },  // Người cho xe vào bến
+        { wch: 25 },  // Trạng thái ký lệnh vận chuyển
+        { wch: 25 },  // Trạng thái đồng bộ dữ liệu
       ];
       ws['!cols'] = colWidths;
 
       // Generate filename with current date
       const currentDate = format(new Date(), "dd-MM-yyyy");
-      const filename = `Bao-cao-cap-phep-ra-ben_${currentDate}.xlsx`;
+      const filename = `Bao-cao-nhat-trinh-xe_${currentDate}.xlsx`;
 
       // Write file
       XLSX.writeFile(wb, filename);
@@ -288,7 +327,7 @@ export default function BaoCaoCapPhepRaBen() {
             <div className="flex items-center gap-2">
               <Search className="h-4 w-4 text-gray-500" />
               <Input
-                placeholder="Tìm kiếm biển số, đơn vị, tuyến..."
+                placeholder="Tìm kiếm biển số, đơn vị, mã lệnh, tuyến..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -326,6 +365,15 @@ export default function BaoCaoCapPhepRaBen() {
                     Tên đơn vị
                   </SortableTableHead>
                   <SortableTableHead
+                    sortKey="orderCode"
+                    currentSortColumn={sortColumn}
+                    sortDirection={sortDirection}
+                    onSort={handleSort}
+                    className="text-center font-semibold"
+                  >
+                    Mã lệnh xuất bến
+                  </SortableTableHead>
+                  <SortableTableHead
                     sortKey="routeName"
                     currentSortColumn={sortColumn}
                     sortDirection={sortDirection}
@@ -344,50 +392,50 @@ export default function BaoCaoCapPhepRaBen() {
                     Thời gian vào bến
                   </SortableTableHead>
                   <SortableTableHead
-                    sortKey="permitTime"
+                    sortKey="entryBy"
                     currentSortColumn={sortColumn}
                     sortDirection={sortDirection}
                     onSort={handleSort}
                     className="text-center font-semibold"
                   >
-                    Thời gian cấp phép ra bến
+                    Người cho xe vào bến
                   </SortableTableHead>
                   <SortableTableHead
-                    sortKey="permitBy"
+                    sortKey="permitStatus"
                     currentSortColumn={sortColumn}
                     sortDirection={sortDirection}
                     onSort={handleSort}
                     className="text-center font-semibold"
                   >
-                    Người cấp phép ra bến
+                    Trạng thái ký lệnh vận chuyển
                   </SortableTableHead>
                   <SortableTableHead
-                    sortKey="exitTime"
+                    sortKey="syncStatus"
                     currentSortColumn={sortColumn}
                     sortDirection={sortDirection}
                     onSort={handleSort}
                     className="text-center font-semibold"
                   >
-                    Thời gian ra bến
+                    Trạng thái đồng bộ dữ liệu
                   </SortableTableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center text-gray-500">
+                    <TableCell colSpan={9} className="text-center text-gray-500">
                       Đang tải dữ liệu...
                     </TableCell>
                   </TableRow>
                 ) : filteredData.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={8} className="text-center text-gray-500">
+                    <TableCell colSpan={9} className="text-center text-gray-500">
                       Không có dữ liệu
                     </TableCell>
                   </TableRow>
                 ) : (
                   filteredData.map((item, index) => (
-                    <TableRow key={`${item.plateNumber}-${item.permitTime}-${index}`}>
+                    <TableRow key={`${item.plateNumber}-${item.entryTime}-${index}`}>
                       <TableCell className="text-center">
                         {index + 1}
                       </TableCell>
@@ -398,19 +446,22 @@ export default function BaoCaoCapPhepRaBen() {
                         {item.operatorName}
                       </TableCell>
                       <TableCell className="text-center">
+                        {item.orderCode}
+                      </TableCell>
+                      <TableCell className="text-center">
                         {item.routeName}
                       </TableCell>
                       <TableCell className="text-center">
                         {renderTime(item.entryTime)}
                       </TableCell>
                       <TableCell className="text-center">
-                        {renderTime(item.permitTime)}
+                        {item.entryBy}
                       </TableCell>
                       <TableCell className="text-center">
-                        {item.permitBy}
+                        {item.permitStatus}
                       </TableCell>
                       <TableCell className="text-center">
-                        {renderTime(item.exitTime)}
+                        {item.syncStatus}
                       </TableCell>
                     </TableRow>
                   ))

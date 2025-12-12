@@ -442,6 +442,37 @@ export interface ServiceChargeInput {
   totalAmount: number
 }
 
+// Service Management types (Quản lý dịch vụ)
+export interface Service {
+  id: string
+  code: string // Mã dịch vụ
+  name: string // Tên dịch vụ
+  unit: string // Đơn vị tính
+  taxPercentage: number // Phần trăm thuế
+  materialType: string // Loại vật tư/hàng hóa
+  useQuantityFormula: boolean // Sử dụng công thức tính số lượng
+  usePriceFormula: boolean // Sử dụng công thức tính đơn giá
+  displayOrder: number // Thứ tự hiển thị
+  isDefault: boolean // Mặc định chọn
+  autoCalculateQuantity: boolean // Tự động tính số lượng
+  isActive: boolean // Trạng thái
+  createdAt?: string
+  updatedAt?: string
+}
+
+export interface ServiceInput {
+  code: string
+  name: string
+  unit: string
+  taxPercentage: number
+  materialType: string
+  useQuantityFormula: boolean
+  usePriceFormula: boolean
+  displayOrder: number
+  isDefault: boolean
+  autoCalculateQuantity: boolean
+}
+
 // Invoice types
 export interface Invoice {
   id: string
