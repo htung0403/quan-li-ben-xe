@@ -158,13 +158,13 @@ export const deleteShift = async (req: Request, res: Response) => {
 
     if (error) throw error
 
-    res.status(204).send()
+    return res.status(204).send()
   } catch (error: any) {
     // Check if shift is being referenced by other tables
     if (error.code === '23503') {
       return res.status(400).json({ error: 'Không thể xóa ca trực. Ca trực này đang được sử dụng trong hệ thống.' })
     }
-    res.status(500).json({ error: error.message || 'Không thể xóa ca trực' })
+    return res.status(500).json({ error: error.message || 'Không thể xóa ca trực' })
   }
 }
 

@@ -245,7 +245,7 @@ export const deleteServiceFormula = async (req: Request, res: Response) => {
 
     if (error) throw error
 
-    res.status(204).send()
+    return res.status(204).send()
   } catch (error: any) {
     console.error('Error deleting service formula:', error)
     return res.status(500).json({ error: 'Failed to delete service formula' })
