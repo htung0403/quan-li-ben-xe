@@ -1,4 +1,5 @@
 import { Request, Response } from 'express'
+import { AuthRequest } from '../middleware/auth.js'
 import { supabase } from '../config/database.js'
 import { z } from 'zod'
 
@@ -22,6 +23,8 @@ const vehicleSchema = z.object({
   gpsProvider: z.string().optional(),
   gpsUsername: z.string().optional(),
   gpsPassword: z.string().optional(),
+  
+  province: z.string().optional(),
 
   notes: z.string().optional(),
   documents: z.object({
@@ -146,6 +149,8 @@ export const getAllVehicles = async (req: Request, res: Response) => {
         gpsProvider: vehicle.gps_provider,
         gpsUsername: vehicle.gps_username,
         gpsPassword: vehicle.gps_password,
+        
+        province: vehicle.province,
 
         isActive: vehicle.is_active,
         notes: vehicle.notes,
@@ -240,6 +245,8 @@ export const getVehicleById = async (req: Request, res: Response) => {
       gpsProvider: vehicle.gps_provider,
       gpsUsername: vehicle.gps_username,
       gpsPassword: vehicle.gps_password,
+      
+      province: vehicle.province,
 
       isActive: vehicle.is_active,
       notes: vehicle.notes,
@@ -270,6 +277,7 @@ export const createVehicle = async (req: Request, res: Response) => {
       insuranceExpiryDate, inspectionExpiryDate,
       cargoLength, cargoWidth, cargoHeight,
       gpsProvider, gpsUsername, gpsPassword,
+      province,
       notes, documents 
     } = validated
 
@@ -296,6 +304,8 @@ export const createVehicle = async (req: Request, res: Response) => {
         gps_provider: gpsProvider || null,
         gps_username: gpsUsername || null,
         gps_password: gpsPassword || null,
+        
+        province: province || null,
 
         notes: notes || null,
         is_active: true,
@@ -383,6 +393,8 @@ export const createVehicle = async (req: Request, res: Response) => {
       gpsProvider: vehicle.gps_provider,
       gpsUsername: vehicle.gps_username,
       gpsPassword: vehicle.gps_password,
+      
+      province: vehicle.province,
 
       isActive: vehicle.is_active,
       notes: vehicle.notes,
@@ -407,16 +419,29 @@ export const createVehicle = async (req: Request, res: Response) => {
   }
 }
 
-export const updateVehicle = async (req: Request, res: Response) => {
+export const updateVehicle = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params
+    const userId = req.user?.id
     const validated = vehicleSchema.partial().parse(req.body)
 
     // Update vehicle
     const updateData: any = {}
     if (validated.plateNumber) updateData.plate_number = validated.plateNumber
-    if (validated.vehicleTypeId !== undefined) updateData.vehicle_type_id = validated.vehicleTypeId || null
-    if (validated.operatorId) updateData.operator_id = validated.operatorId
+    // Allow updating vehicleTypeId even if it's empty to clear the value
+    if (validated.vehicleTypeId !== undefined) {
+      updateData.vehicle_type_id = validated.vehicleTypeId || null
+    }
+    // Allow updating operatorId - handle both empty string and undefined
+    // Empty string from frontend means clear the operator
+    if ('operatorId' in req.body) {
+      // Field was explicitly sent (even if empty), so update it
+      const operatorId = req.body.operatorId
+      updateData.operator_id = (operatorId && operatorId.trim() !== '') ? operatorId : null
+    } else if (validated.operatorId !== undefined) {
+      // Validated and present in request
+      updateData.operator_id = validated.operatorId || null
+    }
     if (validated.seatCapacity) updateData.seat_capacity = validated.seatCapacity
     if (validated.bedCapacity !== undefined) updateData.bed_capacity = validated.bedCapacity || 0
     if (validated.chassisNumber !== undefined) updateData.chassis_number = validated.chassisNumber || null
@@ -433,6 +458,8 @@ export const updateVehicle = async (req: Request, res: Response) => {
     if (validated.gpsProvider !== undefined) updateData.gps_provider = validated.gpsProvider || null
     if (validated.gpsUsername !== undefined) updateData.gps_username = validated.gpsUsername || null
     if (validated.gpsPassword !== undefined) updateData.gps_password = validated.gpsPassword || null
+    
+    if (validated.province !== undefined) updateData.province = validated.province || null
 
     if (validated.notes !== undefined) updateData.notes = validated.notes || null
 
@@ -472,6 +499,7 @@ export const updateVehicle = async (req: Request, res: Response) => {
                 issuing_authority: doc.issuingAuthority || null,
                 document_url: doc.documentUrl || null,
                 notes: doc.notes || null,
+                updated_by: userId || null,
                 updated_at: new Date().toISOString()
               })
               .eq('id', existingDoc.id)
@@ -490,6 +518,7 @@ export const updateVehicle = async (req: Request, res: Response) => {
                 issuing_authority: doc.issuingAuthority || null,
                 document_url: doc.documentUrl || null,
                 notes: doc.notes || null,
+                updated_by: userId || null,
               })
 
             if (insertError) throw insertError
@@ -560,6 +589,8 @@ export const updateVehicle = async (req: Request, res: Response) => {
       gpsProvider: vehicle.gps_provider,
       gpsUsername: vehicle.gps_username,
       gpsPassword: vehicle.gps_password,
+      
+      province: vehicle.province,
 
       isActive: vehicle.is_active,
       notes: vehicle.notes,
@@ -578,6 +609,84 @@ export const updateVehicle = async (req: Request, res: Response) => {
       return res.status(400).json({ error: error.errors[0].message })
     }
     return res.status(500).json({ error: error.message || 'Failed to update vehicle' })
+  }
+}
+
+export const getVehicleDocumentAuditLogs = async (req: Request, res: Response) => {
+  try {
+    const { id: vehicleId } = req.params
+
+    if (!vehicleId) {
+      return res.status(400).json({ error: 'Vehicle ID is required' })
+    }
+
+    // Lấy tất cả vehicle_documents của xe này
+    const { data: vehicleDocs, error: docsError } = await supabase
+      .from('vehicle_documents')
+      .select('id')
+      .eq('vehicle_id', vehicleId)
+
+    if (docsError) throw docsError
+
+    const docIds = vehicleDocs?.map((doc: any) => doc.id) || []
+
+    if (docIds.length === 0) {
+      return res.json([])
+    }
+
+    // Lấy audit logs cho các documents này
+    const { data: auditLogs, error: auditError } = await supabase
+      .from('audit_logs')
+      .select(`
+        *,
+        users:user_id(id, full_name, username)
+      `)
+      .eq('table_name', 'vehicle_documents')
+      .in('record_id', docIds)
+      .order('created_at', { ascending: false })
+
+    if (auditError) throw auditError
+
+    // Format response
+    // Convert timestamp to Vietnam timezone (UTC+7) for display
+    const formattedLogs = auditLogs?.map((log: any) => {
+      let createdAt = log.created_at
+      
+      // If timestamp is UTC (ends with Z), convert to Vietnam time (add +07:00)
+      if (createdAt && typeof createdAt === 'string') {
+        if (createdAt.endsWith('Z')) {
+          // UTC timestamp, add 7 hours and format as +07:00
+          const utcDate = new Date(createdAt)
+          const vietnamDate = new Date(utcDate.getTime() + 7 * 60 * 60 * 1000)
+          const year = vietnamDate.getUTCFullYear()
+          const month = String(vietnamDate.getUTCMonth() + 1).padStart(2, '0')
+          const day = String(vietnamDate.getUTCDate()).padStart(2, '0')
+          const hours = String(vietnamDate.getUTCHours()).padStart(2, '0')
+          const minutes = String(vietnamDate.getUTCMinutes()).padStart(2, '0')
+          const seconds = String(vietnamDate.getUTCSeconds()).padStart(2, '0')
+          createdAt = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}+07:00`
+        } else if (!createdAt.includes('+') && !createdAt.includes('Z')) {
+          // No timezone info, assume it's already Vietnam time, add +07:00
+          createdAt = createdAt.endsWith('+07:00') ? createdAt : `${createdAt}+07:00`
+        }
+      }
+      
+      return {
+        id: log.id,
+        userId: log.user_id,
+        userName: log.users?.full_name || log.users?.username || 'Không xác định',
+        action: log.action,
+        recordId: log.record_id,
+        oldValues: log.old_values,
+        newValues: log.new_values,
+        createdAt,
+      }
+    }) || []
+
+    return res.json(formattedLogs)
+  } catch (error: any) {
+    console.error('Error fetching vehicle document audit logs:', error)
+    return res.status(500).json({ error: error.message || 'Failed to fetch audit logs' })
   }
 }
 

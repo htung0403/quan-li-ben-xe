@@ -57,10 +57,11 @@ export function CapPhepDialog({
     record.transportOrderCode || ""
   );
   const [replacementVehicleId, setReplacementVehicleId] = useState("");
-  const [seatCount, setSeatCount] = useState(
-    record.seatCount?.toString() || "2"
-  );
-  const [bedCount, setBedCount] = useState("41");
+  const [seatCount, setSeatCount] = useState(() => {
+    // Ưu tiên lấy từ record nếu có, nếu không thì đợi vehicle load
+    return record.seatCount?.toString() || "";
+  });
+  const [bedCount, setBedCount] = useState("0");
   const [hhTicketCount, setHhTicketCount] = useState("0");
   const [hhPercentage, setHhPercentage] = useState("0");
   // const [useHhPercentage, setUseHhPercentage] = useState(true);
@@ -120,6 +121,23 @@ export function CapPhepDialog({
     calculateTotal();
   }, [serviceCharges]);
 
+  // Tự động điền seatCount và bedCount từ dữ liệu xe khi selectedVehicle thay đổi
+  useEffect(() => {
+    if (selectedVehicle) {
+      // Ưu tiên lấy từ vehicle.seatCapacity nếu có, nếu record chưa có giá trị hoặc bằng 0
+      if ((!record.seatCount || record.seatCount === 0) && selectedVehicle.seatCapacity) {
+        setSeatCount(selectedVehicle.seatCapacity.toString());
+      } else if (record.seatCount && record.seatCount > 0) {
+        // Nếu record đã có giá trị hợp lệ, giữ nguyên
+        setSeatCount(record.seatCount.toString());
+      }
+      // Tự động điền bedCount từ vehicle.bedCapacity
+      if (selectedVehicle.bedCapacity !== undefined && selectedVehicle.bedCapacity !== null) {
+        setBedCount(selectedVehicle.bedCapacity.toString());
+      }
+    }
+  }, [selectedVehicle, record.seatCount]);
+
   const loadInitialData = async () => {
     try {
       const [routesData, vehiclesData] = await Promise.all([
@@ -132,6 +150,19 @@ export function CapPhepDialog({
       if (record.vehicleId) {
         const vehicle = await vehicleService.getById(record.vehicleId);
         setSelectedVehicle(vehicle);
+
+        // Tự động điền seatCount và bedCount từ dữ liệu xe
+        // Ưu tiên dùng giá trị từ vehicle.seatCapacity nếu record chưa có giá trị hoặc bằng 0
+        if ((!record.seatCount || record.seatCount === 0) && vehicle.seatCapacity) {
+          setSeatCount(vehicle.seatCapacity.toString());
+        } else if (record.seatCount && record.seatCount > 0) {
+          // Nếu record đã có giá trị hợp lệ, giữ nguyên
+          setSeatCount(record.seatCount.toString());
+        }
+        // Tự động điền bedCount từ vehicle.bedCapacity
+        if (vehicle.bedCapacity !== undefined && vehicle.bedCapacity !== null) {
+          setBedCount(vehicle.bedCapacity.toString());
+        }
 
         if (vehicle.operatorId) {
           // Only load the assigned driver initially, not all drivers

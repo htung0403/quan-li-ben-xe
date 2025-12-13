@@ -452,6 +452,30 @@ export interface ServiceChargeInput {
   totalAmount: number
 }
 
+// Service Formula types
+export interface ServiceFormula {
+  id: string
+  code: string
+  name: string
+  description?: string
+  formulaType: 'quantity' | 'price'
+  formulaExpression?: string
+  isActive: boolean
+  usageCount?: number
+  usedByServices?: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface ServiceFormulaInput {
+  code: string
+  name: string
+  description?: string
+  formulaType: 'quantity' | 'price'
+  formulaExpression?: string
+  isActive?: boolean
+}
+
 // Invoice types
 export interface Invoice {
   id: string

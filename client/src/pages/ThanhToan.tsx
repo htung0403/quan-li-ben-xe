@@ -12,9 +12,6 @@ import {
   X,
   RefreshCw,
   FileSpreadsheet,
-  Eye,
-  Filter,
-  ScanLine,
   RotateCw,
   Search,
 } from "lucide-react"
@@ -415,10 +412,10 @@ export default function ThanhToan() {
                 <Button variant="ghost" size="icon" title="Làm mới" onClick={loadListData}><RefreshCw className="h-4 w-4" /></Button>
                 <Button variant="ghost" size="icon" title="Xuất Excel" onClick={handleExportExcel}><FileSpreadsheet className="h-4 w-4" /></Button>
                 <Button variant="ghost" size="icon" title="Thêm mới" onClick={() => navigate("/thanh-toan/tao-moi")}><Plus className="h-4 w-4" /></Button>
-                <Button variant="ghost" size="icon" title="Xem"><Eye className="h-4 w-4" /></Button>
+                {/* <Button variant="ghost" size="icon" title="Xem"><Eye className="h-4 w-4" /></Button>
                 <Button variant="ghost" size="icon" title="Lọc"><Filter className="h-4 w-4" /></Button>
                 <Button variant="ghost" size="icon" title="In"><Printer className="h-4 w-4" /></Button>
-                <Button variant="ghost" size="icon" title="Quét"><ScanLine className="h-4 w-4" /></Button>
+                <Button variant="ghost" size="icon" title="Quét"><ScanLine className="h-4 w-4" /></Button> */}
                 <Button variant="ghost" size="icon" title="Tải lại" onClick={loadListData}><RotateCw className="h-4 w-4" /></Button>
             </div>
             <div>

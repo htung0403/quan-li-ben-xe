@@ -4,7 +4,7 @@ import { z } from 'zod'
 
 const serviceChargeSchema = z.object({
   dispatchRecordId: z.string().uuid('Invalid dispatch record ID'),
-  serviceTypeId: z.string().uuid('Invalid service type ID'),
+  serviceTypeId: z.string().uuid('Invalid service ID'), // Giữ tên cũ để tương thích với frontend
   quantity: z.number().positive().default(1),
   unitPrice: z.number().nonnegative('Unit price must be non-negative'),
   totalAmount: z.number().nonnegative('Total amount must be non-negative'),
@@ -18,7 +18,7 @@ export const getAllServiceCharges = async (req: Request, res: Response) => {
       .from('service_charges')
       .select(`
         *,
-        service_types:service_type_id(id, code, name, base_price, unit)
+        services:service_id(id, code, name, base_price, unit, description)
       `)
       .order('created_at', { ascending: false })
 
@@ -33,13 +33,14 @@ export const getAllServiceCharges = async (req: Request, res: Response) => {
     const serviceCharges = data.map((charge: any) => ({
       id: charge.id,
       dispatchRecordId: charge.dispatch_record_id,
-      serviceTypeId: charge.service_type_id,
-      serviceType: charge.service_types ? {
-        id: charge.service_types.id,
-        code: charge.service_types.code,
-        name: charge.service_types.name,
-        basePrice: parseFloat(charge.service_types.base_price),
-        unit: charge.service_types.unit,
+      serviceTypeId: charge.service_id, // Map từ service_id nhưng giữ tên serviceTypeId để tương thích
+      serviceType: charge.services ? {
+        id: charge.services.id,
+        code: charge.services.code,
+        name: charge.services.name,
+        basePrice: parseFloat(charge.services.base_price || 0),
+        unit: charge.services.unit,
+        description: charge.services.description,
       } : undefined,
       quantity: parseFloat(charge.quantity),
       unitPrice: parseFloat(charge.unit_price),
@@ -61,7 +62,7 @@ export const getServiceChargeById = async (req: Request, res: Response) => {
       .from('service_charges')
       .select(`
         *,
-        service_types:service_type_id(id, code, name, base_price, unit)
+        services:service_id(id, code, name, base_price, unit, description)
       `)
       .eq('id', id)
       .single()
@@ -74,13 +75,14 @@ export const getServiceChargeById = async (req: Request, res: Response) => {
     return res.json({
       id: data.id,
       dispatchRecordId: data.dispatch_record_id,
-      serviceTypeId: data.service_type_id,
-      serviceType: data.service_types ? {
-        id: data.service_types.id,
-        code: data.service_types.code,
-        name: data.service_types.name,
-        basePrice: parseFloat(data.service_types.base_price),
-        unit: data.service_types.unit,
+      serviceTypeId: data.service_id, // Map từ service_id nhưng giữ tên serviceTypeId để tương thích
+      serviceType: data.services ? {
+        id: data.services.id,
+        code: data.services.code,
+        name: data.services.name,
+        basePrice: parseFloat(data.services.base_price || 0),
+        unit: data.services.unit,
+        description: data.services.description,
       } : undefined,
       quantity: parseFloat(data.quantity),
       unitPrice: parseFloat(data.unit_price),
@@ -100,14 +102,14 @@ export const createServiceCharge = async (req: Request, res: Response) => {
       .from('service_charges')
       .insert({
         dispatch_record_id: validated.dispatchRecordId,
-        service_type_id: validated.serviceTypeId,
+        service_id: validated.serviceTypeId, // Map serviceTypeId từ request vào service_id trong DB
         quantity: validated.quantity,
         unit_price: validated.unitPrice,
         total_amount: validated.totalAmount,
       })
       .select(`
         *,
-        service_types:service_type_id(id, code, name, base_price, unit)
+        services:service_id(id, code, name, base_price, unit, description)
       `)
       .single()
 
@@ -116,13 +118,14 @@ export const createServiceCharge = async (req: Request, res: Response) => {
     return res.status(201).json({
       id: data.id,
       dispatchRecordId: data.dispatch_record_id,
-      serviceTypeId: data.service_type_id,
-      serviceType: data.service_types ? {
-        id: data.service_types.id,
-        code: data.service_types.code,
-        name: data.service_types.name,
-        basePrice: parseFloat(data.service_types.base_price),
-        unit: data.service_types.unit,
+      serviceTypeId: data.service_id, // Map từ service_id nhưng giữ tên serviceTypeId để tương thích
+      serviceType: data.services ? {
+        id: data.services.id,
+        code: data.services.code,
+        name: data.services.name,
+        basePrice: parseFloat(data.services.base_price || 0),
+        unit: data.services.unit,
+        description: data.services.description,
       } : undefined,
       quantity: parseFloat(data.quantity),
       unitPrice: parseFloat(data.unit_price),
@@ -158,9 +161,11 @@ export const getAllServiceTypes = async (req: Request, res: Response) => {
   try {
     const { isActive } = req.query
 
+    // Lấy từ bảng services (bảng chính) thay vì service_types
     let query = supabase
-      .from('service_types')
-      .select('*')
+      .from('services')
+      .select('id, code, name, description, base_price, unit, is_active, created_at, updated_at')
+      .order('display_order', { ascending: true })
       .order('name', { ascending: true })
 
     if (isActive !== undefined) {
@@ -171,16 +176,17 @@ export const getAllServiceTypes = async (req: Request, res: Response) => {
 
     if (error) throw error
 
-    const serviceTypes = data.map((st: any) => ({
-      id: st.id,
-      code: st.code,
-      name: st.name,
-      description: st.description,
-      basePrice: parseFloat(st.base_price),
-      unit: st.unit,
-      isActive: st.is_active,
-      createdAt: st.created_at,
-      updatedAt: st.updated_at,
+    // Map từ services sang ServiceType format để tương thích với frontend
+    const serviceTypes = data.map((svc: any) => ({
+      id: svc.id,
+      code: svc.code,
+      name: svc.name,
+      description: svc.description,
+      basePrice: parseFloat(svc.base_price || 0),
+      unit: svc.unit,
+      isActive: svc.is_active,
+      createdAt: svc.created_at,
+      updatedAt: svc.updated_at,
     }))
 
     res.json(serviceTypes)

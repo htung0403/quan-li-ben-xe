@@ -73,6 +73,22 @@ export const getServiceById = async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Service not found' })
     }
 
+    // Lấy thông tin biểu thức đã chọn
+    const { data: usageData } = await supabase
+      .from('service_formula_usage')
+      .select('formula_id, usage_type')
+      .eq('service_id', id)
+
+    let quantityFormulaId = ''
+    let priceFormulaId = ''
+    
+    if (usageData) {
+      const quantityUsage = usageData.find((u: any) => u.usage_type === 'quantity')
+      const priceUsage = usageData.find((u: any) => u.usage_type === 'price')
+      quantityFormulaId = quantityUsage?.formula_id || ''
+      priceFormulaId = priceUsage?.formula_id || ''
+    }
+
     return res.json({
       id: data.id,
       code: data.code,
@@ -86,6 +102,8 @@ export const getServiceById = async (req: Request, res: Response) => {
       isDefault: data.is_default,
       autoCalculateQuantity: data.auto_calculate_quantity,
       isActive: data.is_active,
+      quantityFormulaExpression: quantityFormulaId,
+      priceFormulaExpression: priceFormulaId,
       createdAt: data.created_at,
       updatedAt: data.updated_at,
     })
@@ -98,6 +116,7 @@ export const getServiceById = async (req: Request, res: Response) => {
 export const createService = async (req: Request, res: Response) => {
   try {
     const validated = serviceSchema.parse(req.body)
+    const { quantityFormulaExpression, priceFormulaExpression } = req.body
 
     const { data, error } = await supabase
       .from('services')
@@ -118,6 +137,37 @@ export const createService = async (req: Request, res: Response) => {
       .single()
 
     if (error) throw error
+
+    // Lưu mối quan hệ với biểu thức vào service_formula_usage
+    // Lưu nếu có chọn biểu thức (không cần kiểm tra checkbox)
+    const usageInserts: any[] = []
+    
+    if (quantityFormulaExpression) {
+      usageInserts.push({
+        service_id: data.id,
+        formula_id: quantityFormulaExpression,
+        usage_type: 'quantity',
+      })
+    }
+    
+    if (priceFormulaExpression) {
+      usageInserts.push({
+        service_id: data.id,
+        formula_id: priceFormulaExpression,
+        usage_type: 'price',
+      })
+    }
+
+    if (usageInserts.length > 0) {
+      const { error: usageError } = await supabase
+        .from('service_formula_usage')
+        .insert(usageInserts)
+
+      if (usageError) {
+        console.error('Error creating service formula usage:', usageError)
+        // Không throw error, chỉ log vì service đã được tạo thành công
+      }
+    }
 
     return res.status(201).json({
       id: data.id,
@@ -151,6 +201,7 @@ export const updateService = async (req: Request, res: Response) => {
   try {
     const { id } = req.params
     const validated = serviceSchema.partial().parse(req.body)
+    const { quantityFormulaExpression, priceFormulaExpression } = req.body
 
     const updateData: any = {}
     if (validated.code !== undefined) updateData.code = validated.code
@@ -177,6 +228,44 @@ export const updateService = async (req: Request, res: Response) => {
     if (error) throw error
     if (!data) {
       return res.status(404).json({ error: 'Service not found' })
+    }
+
+    // Cập nhật mối quan hệ với biểu thức
+    // Xóa các usage cũ
+    await supabase
+      .from('service_formula_usage')
+      .delete()
+      .eq('service_id', id)
+
+    // Tạo lại các usage mới
+    // Lưu nếu có chọn biểu thức (không cần kiểm tra checkbox)
+    const usageInserts: any[] = []
+    
+    if (quantityFormulaExpression) {
+      usageInserts.push({
+        service_id: id,
+        formula_id: quantityFormulaExpression,
+        usage_type: 'quantity',
+      })
+    }
+    
+    if (priceFormulaExpression) {
+      usageInserts.push({
+        service_id: id,
+        formula_id: priceFormulaExpression,
+        usage_type: 'price',
+      })
+    }
+
+    if (usageInserts.length > 0) {
+      const { error: usageError } = await supabase
+        .from('service_formula_usage')
+        .insert(usageInserts)
+
+      if (usageError) {
+        console.error('Error updating service formula usage:', usageError)
+        // Không throw error, chỉ log vì service đã được cập nhật thành công
+      }
     }
 
     return res.json({

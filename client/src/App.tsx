@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
 import { ToastContainer } from "react-toastify"
 import "react-toastify/dist/ReactToastify.css"
 import { useAuthStore } from "@/store/auth.store"
+import { useUIStore } from "@/store/ui.store"
 import { MainLayout } from "@/components/layout/MainLayout"
 import { PublicLayout } from "@/components/layout/PublicLayout"
 import Login from "@/pages/Login"
@@ -18,6 +19,7 @@ import QuanLyDonViVanTai from "@/pages/QuanLyDonViVanTai"
 import QuanLyTuyen from "@/pages/QuanLyTuyen"
 import QuanLyBenDen from "@/pages/QuanLyBenDen"
 import QuanLyDichVu from "@/pages/QuanLyDichVu"
+import QuanLyBieuThuc from "@/pages/QuanLyBieuThuc"
 import DanhSachCaTruc from "@/pages/DanhSachCaTruc"
 import BaoCao from "@/pages/BaoCao"
 import Profile from "@/pages/Profile"
@@ -52,10 +54,18 @@ import BangKeHoaDon from "@/pages/BangKeHoaDon"
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading, checkAuth } = useAuthStore()
+  const { initializeShiftIfNeeded } = useUIStore()
 
   useEffect(() => {
     checkAuth()
   }, [checkAuth])
+
+  // Tự động set shift theo giờ hiện tại khi đăng nhập lần đầu
+  useEffect(() => {
+    if (isAuthenticated && !isLoading) {
+      initializeShiftIfNeeded()
+    }
+  }, [isAuthenticated, isLoading, initializeShiftIfNeeded])
 
   if (isLoading) {
     return (
@@ -241,6 +251,16 @@ function App() {
             <ProtectedRoute>
               <MainLayout>
                 <QuanLyDichVu />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/quan-ly-bieu-thuc"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <QuanLyBieuThuc />
               </MainLayout>
             </ProtectedRoute>
           }

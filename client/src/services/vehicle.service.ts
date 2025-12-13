@@ -28,4 +28,9 @@ export const vehicleService = {
   delete: async (id: string): Promise<void> => {
     await api.delete(`/vehicles/${id}`)
   },
+
+  getDocumentAuditLogs: async (vehicleId: string): Promise<any[]> => {
+    const response = await api.get<any[]>(`/vehicles/${vehicleId}/document-audit-logs`)
+    return response.data
+  },
 }

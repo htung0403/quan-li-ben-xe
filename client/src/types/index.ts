@@ -100,6 +100,8 @@ export interface Vehicle {
   gpsProvider?: string
   gpsUsername?: string
   gpsPassword?: string
+  
+  province?: string
 
   isActive: boolean
   notes?: string
@@ -148,6 +150,8 @@ export interface VehicleInput {
   gpsProvider?: string
   gpsUsername?: string
   gpsPassword?: string
+  
+  province?: string
 
   notes?: string
   documents?: VehicleDocuments
@@ -456,6 +460,8 @@ export interface Service {
   isDefault: boolean // Mặc định chọn
   autoCalculateQuantity: boolean // Tự động tính số lượng
   isActive: boolean // Trạng thái
+  quantityFormulaExpression?: string // ID biểu thức tính số lượng
+  priceFormulaExpression?: string // ID biểu thức tính đơn giá
   createdAt?: string
   updatedAt?: string
 }
@@ -471,6 +477,30 @@ export interface ServiceInput {
   displayOrder: number
   isDefault: boolean
   autoCalculateQuantity: boolean
+}
+
+// Service Formula types (Quản lý biểu thức)
+export interface ServiceFormula {
+  id: string
+  code: string // Mã biểu thức
+  name: string // Tên biểu thức
+  description?: string // Ghi chú
+  formulaType: 'quantity' | 'price' // Loại biểu thức: tính số lượng hoặc tính đơn giá
+  formulaExpression?: string // Biểu thức công thức
+  isActive: boolean // Trạng thái
+  usageCount?: number // Số lượng dịch vụ đang sử dụng (từ view)
+  usedByServices?: string // Danh sách dịch vụ đang sử dụng (từ view)
+  createdAt?: string
+  updatedAt?: string
+}
+
+export interface ServiceFormulaInput {
+  code: string
+  name: string
+  description?: string
+  formulaType: 'quantity' | 'price'
+  formulaExpression?: string
+  isActive?: boolean
 }
 
 // Invoice types

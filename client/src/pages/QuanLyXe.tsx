@@ -27,6 +27,7 @@ import type { Vehicle } from "@/types"
 import { useUIStore } from "@/store/ui.store"
 import { VehicleView } from "@/components/vehicle/VehicleView"
 import { VehicleForm } from "@/components/vehicle/VehicleForm"
+import { provinceService, type Province } from "@/services/province.service"
 import { format, isValid, parseISO } from "date-fns"
 
 // Helper functions to extract display values
@@ -60,17 +61,21 @@ export default function QuanLyXe() {
   const [searchQuery, setSearchQuery] = useState("")
   const [filterVehicleType, setFilterVehicleType] = useState("")
   const [filterOperator, setFilterOperator] = useState("")
+  const [filterProvince, setFilterProvince] = useState("")
+  const [filterBacNinh, setFilterBacNinh] = useState<"all" | "bac-ninh" | "outside-bac-ninh">("all")
   const [isLoading, setIsLoading] = useState(false)
   const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [viewMode, setViewMode] = useState<"create" | "edit" | "view">("create")
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
   const [vehicleToDelete, setVehicleToDelete] = useState<Vehicle | null>(null)
+  const [provinces, setProvinces] = useState<Province[]>([])
   const setTitle = useUIStore((state) => state.setTitle)
 
   useEffect(() => {
     setTitle("Quản lý xe")
     loadVehicles()
+    loadProvinces()
   }, [setTitle])
 
   const loadVehicles = async () => {
@@ -83,6 +88,16 @@ export default function QuanLyXe() {
       toast.error("Không thể tải danh sách xe. Vui lòng thử lại sau.")
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const loadProvinces = async () => {
+    try {
+      const data = await provinceService.getProvincesV2()
+      setProvinces(data)
+    } catch (error) {
+      console.error("Failed to load provinces:", error)
+      toast.error("Không thể tải danh sách tỉnh/thành phố")
     }
   }
 
@@ -115,6 +130,24 @@ export default function QuanLyXe() {
     // Operator filter
     if (filterOperator && operatorName !== filterOperator) {
       return false
+    }
+
+    // Province filter
+    if (filterProvince && vehicle.province !== filterProvince) {
+      return false
+    }
+
+    // Bắc Ninh filter
+    if (filterBacNinh !== "all") {
+      const isBacNinh = vehicle.province === "Bắc Ninh"
+      if (filterBacNinh === "bac-ninh") {
+        // Chỉ hiển thị xe của tỉnh Bắc Ninh
+        if (!isBacNinh) return false
+      }
+      if (filterBacNinh === "outside-bac-ninh") {
+        // Hiển thị xe ngoài tỉnh Bắc Ninh (bao gồm cả xe chưa có tỉnh)
+        if (isBacNinh) return false
+      }
     }
 
     return true
@@ -180,7 +213,7 @@ export default function QuanLyXe() {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="filterVehicleType" className="text-sm font-medium">
                   Lọc theo loại xe
@@ -215,6 +248,37 @@ export default function QuanLyXe() {
                   ))}
                 </Select>
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="filterProvince" className="text-sm font-medium">
+                  Lọc theo tỉnh/thành phố
+                </Label>
+                <Select
+                  id="filterProvince"
+                  value={filterProvince}
+                  onChange={(e) => setFilterProvince(e.target.value)}
+                >
+                  <option value="">Tất cả tỉnh/thành phố</option>
+                  {provinces.map((province) => (
+                    <option key={province.code} value={province.name}>
+                      {province.name}
+                    </option>
+                  ))}
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="filterBacNinh" className="text-sm font-medium">
+                  Lọc xe trong tỉnh
+                </Label>
+                <Select
+                  id="filterBacNinh"
+                  value={filterBacNinh}
+                  onChange={(e) => setFilterBacNinh(e.target.value as "all" | "bac-ninh" | "outside-bac-ninh")}
+                >
+                  <option value="all">Tất cả xe</option>
+                  <option value="bac-ninh">Xe của tỉnh Bắc Ninh</option>
+                  <option value="outside-bac-ninh">Xe ngoài tỉnh Bắc Ninh</option>
+                </Select>
+              </div>
             </div>
           </div>
         </CardContent>
@@ -227,6 +291,7 @@ export default function QuanLyXe() {
             <TableRow>
               <TableHead className="text-center">Biển kiểm soát</TableHead>
               <TableHead className="text-center">Số ghế | Số giường</TableHead>
+              <TableHead className="text-center">Tỉnh/Thành phố</TableHead>
               <TableHead className="text-center">Hạn bảo hiểm xe</TableHead>
               <TableHead className="text-center">Hạn đăng kiểm xe</TableHead>
               <TableHead className="text-center">Trạng thái</TableHead>
@@ -236,13 +301,13 @@ export default function QuanLyXe() {
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8">
+                <TableCell colSpan={7} className="text-center py-8">
                   Đang tải...
                 </TableCell>
               </TableRow>
             ) : filteredVehicles.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="text-center py-8 text-gray-500">
+                <TableCell colSpan={7} className="text-center py-8 text-gray-500">
                   Không có dữ liệu
                 </TableCell>
               </TableRow>
@@ -254,6 +319,9 @@ export default function QuanLyXe() {
                   </TableCell>
                   <TableCell className="text-center">
                     {formatCapacity(vehicle)}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    {vehicle.province || "N/A"}
                   </TableCell>
                   <TableCell className="text-center">
                     {formatDate(vehicle.insuranceExpiryDate)}

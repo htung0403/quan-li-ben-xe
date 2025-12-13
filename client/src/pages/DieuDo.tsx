@@ -11,7 +11,6 @@ import {
   FileText,
   Calendar,
   User,
-  Upload,
   RefreshCw,
   ShieldCheck,
   XCircle,
@@ -24,7 +23,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import { Select } from "@/components/ui/select";
 
 import {
   Dialog,
@@ -540,19 +538,6 @@ export default function DieuDo() {
     <div className="h-full flex flex-col overflow-hidden">
       <div className="flex-1 flex flex-col space-y-4 overflow-hidden p-4 lg:p-6">
         {/* Header */}
-        <div className="flex items-center justify-end flex-shrink-0">
-          <Button
-            onClick={() => {
-              setDialogType("entry");
-              setSelectedRecord(null);
-              setDialogOpen(true);
-            }}
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Cho xe vào bến
-          </Button>
-        </div>
-
         {/* Search and Filters */}
         <div className="flex items-center gap-4 flex-shrink-0">
           <div className="relative flex-1">
@@ -564,9 +549,9 @@ export default function DieuDo() {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          <Select className="w-48">
-            <option value="">Loại cấp nốt</option>
-          </Select>
+          <Button variant="outline" size="icon" onClick={loadRecords}>
+            <RefreshCw className="h-4 w-4" />
+          </Button>
           <Button
             variant="outline"
             onClick={() => {
@@ -578,11 +563,16 @@ export default function DieuDo() {
             <ArrowRight className="h-4 w-4" />
             Cho nhiều xe ra bến
           </Button>
-          <Button variant="outline" size="icon" onClick={loadRecords}>
-            <RefreshCw className="h-4 w-4" />
-          </Button>
-          <Button variant="outline" size="icon">
-            <Upload className="h-4 w-4" />
+          
+          <Button
+            onClick={() => {
+              setDialogType("entry");
+              setSelectedRecord(null);
+              setDialogOpen(true);
+            }}
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Cho xe vào bến
           </Button>
         </div>
 

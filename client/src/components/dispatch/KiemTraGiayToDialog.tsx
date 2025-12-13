@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react"
 import { toast } from "react-toastify"
-import { X, CheckCircle } from "lucide-react"
+import { X, CheckCircle, History } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import {
@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog"
 import { DatePicker } from "@/components/DatePicker"
 import { vehicleService } from "@/services/vehicle.service"
+import { DocumentHistoryDialog } from "./DocumentHistoryDialog"
 import type { Vehicle, VehicleDocuments } from "@/types"
 import { format } from "date-fns"
 
@@ -30,6 +31,7 @@ export function KiemTraGiayToDialog({
   const [vehicle, setVehicle] = useState<Vehicle | null>(null)
   const [documents, setDocuments] = useState<VehicleDocuments>({})
   const [isLoading, setIsLoading] = useState(false)
+  const [historyDialogOpen, setHistoryDialogOpen] = useState(false)
 
   useEffect(() => {
     if (open && vehicleId) {
@@ -81,11 +83,11 @@ export function KiemTraGiayToDialog({
               number: number,
               issueDate: issueDate,
               expiryDate: expiryDate,
+              isValid: checkDocumentValidity(expiryDate),
               // Chỉ thêm các trường optional nếu chúng có giá trị (không phải null/undefined)
               ...(existingDoc.issuingAuthority && { issuingAuthority: existingDoc.issuingAuthority }),
               ...(existingDoc.documentUrl && { documentUrl: existingDoc.documentUrl }),
               ...(existingDoc.notes && { notes: existingDoc.notes }),
-              isValid: checkDocumentValidity(expiryDate)
             }
           } else {
             // Nếu document chưa tồn tại, tạo mới với thông tin tối thiểu
@@ -93,7 +95,7 @@ export function KiemTraGiayToDialog({
               number: number,
               issueDate: issueDate,
               expiryDate: expiryDate,
-              isValid: checkDocumentValidity(expiryDate)
+              isValid: checkDocumentValidity(expiryDate),
             }
           }
         }
@@ -106,6 +108,11 @@ export function KiemTraGiayToDialog({
         documents: documentsToUpdate
       })
 
+      toast.success("Cập nhật hiệu lực giấy tờ thành công!")
+      
+      // Reload vehicle data to get updated documents
+      await loadVehicle()
+      
       if (onSuccess) {
         onSuccess()
       }
@@ -204,9 +211,21 @@ export function KiemTraGiayToDialog({
 
   return (
     <Dialog open={open} onOpenChange={onClose} className="w-full flex justify-center">
-      <DialogContent className="max-w-xs">
+      <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Sửa hiệu lực giấy tờ</DialogTitle>
+          <div className="flex items-center justify-between gap-8">
+            <DialogTitle>Sửa hiệu lực giấy tờ</DialogTitle>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setHistoryDialogOpen(true)}
+              className="flex items-center gap-2"
+            >
+              <History className="h-4 w-4" />
+              Lịch sử
+            </Button>
+          </div>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -306,6 +325,13 @@ export function KiemTraGiayToDialog({
           </Button>
         </div>
       </DialogContent>
+
+      {/* Document History Dialog */}
+      <DocumentHistoryDialog
+        vehicleId={vehicleId}
+        open={historyDialogOpen}
+        onClose={() => setHistoryDialogOpen(false)}
+      />
     </Dialog>
   )
 }

@@ -12,11 +12,13 @@ import locationRoutes from './routes/location.routes.js'
 import routeRoutes from './routes/route.routes.js'
 import scheduleRoutes from './routes/schedule.routes.js'
 import vehicleTypeRoutes from './routes/vehicle-type.routes.js'
+import shiftRoutes from './routes/shift.routes.js'
 import dispatchRoutes from './routes/dispatch.routes.js'
 import violationRoutes from './routes/violation.routes.js'
 import invoiceRoutes from './routes/invoice.routes.js'
 import serviceChargeRoutes from './routes/service-charge.routes.js'
 import serviceRoutes from './routes/service.routes.js'
+import serviceFormulaRoutes from './routes/service-formula.routes.js'
 import reportRoutes from './routes/report.routes.js'
 import dashboardRoutes from './routes/dashboard.routes.js'
 import uploadRoutes from './routes/upload.routes.js'
@@ -83,11 +85,13 @@ app.use('/api/locations', locationRoutes)
 app.use('/api/routes', routeRoutes)
 app.use('/api/schedules', scheduleRoutes)
 app.use('/api/vehicle-types', vehicleTypeRoutes)
+app.use('/api/shifts', shiftRoutes)
 app.use('/api/dispatch', dispatchRoutes)
 app.use('/api/violations', violationRoutes)
 app.use('/api/invoices', invoiceRoutes)
 app.use('/api/service-charges', serviceChargeRoutes)
 app.use('/api/services', serviceRoutes)
+app.use('/api/service-formulas', serviceFormulaRoutes)
 app.use('/api/reports', reportRoutes)
 app.use('/api/dashboard', dashboardRoutes)
 app.use('/api/upload', uploadRoutes)

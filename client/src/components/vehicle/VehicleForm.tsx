@@ -1,4 +1,4 @@
-import { useForm } from "react-hook-form"
+import { useForm, Controller } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { toast } from "react-toastify"
@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Select } from "@/components/ui/select"
 import { vehicleService } from "@/services/vehicle.service"
 import { operatorService } from "@/services/operator.service"
+import { provinceService, type Province } from "@/services/province.service"
 import type { Vehicle, VehicleInput, Operator } from "@/types"
 import { Eye, EyeOff, Upload } from "lucide-react"
 import { useState, useEffect } from "react"
@@ -53,6 +54,7 @@ const vehicleSchema = z.object({
   gpsProvider: z.string().optional(),
   gpsUsername: z.string().optional(),
   gpsPassword: z.string().optional(),
+  province: z.string().optional(),
   imageUrl: z.string().url().optional().or(z.literal("")),
 })
 
@@ -74,9 +76,11 @@ export function VehicleForm({
   const [vehicleImage, setVehicleImage] = useState<string | null>(null)
   const [isUploading, setIsUploading] = useState(false)
   const [operators, setOperators] = useState<Operator[]>([])
+  const [provinces, setProvinces] = useState<Province[]>([])
 
   useEffect(() => {
     loadOperators()
+    loadProvinces()
   }, [])
 
   useEffect(() => {
@@ -91,6 +95,16 @@ export function VehicleForm({
       setOperators(data)
     } catch (error) {
       console.error("Failed to load operators:", error)
+    }
+  }
+
+  const loadProvinces = async () => {
+    try {
+      const data = await provinceService.getProvincesV2()
+      setProvinces(data)
+    } catch (error) {
+      console.error("Failed to load provinces:", error)
+      toast.error("Không thể tải danh sách tỉnh/thành phố")
     }
   }
 
@@ -155,6 +169,8 @@ export function VehicleForm({
     register,
     handleSubmit,
     setValue,
+    reset,
+    control,
     formState: { errors },
   } = useForm<VehicleFormData>({
     resolver: zodResolver(vehicleSchema),
@@ -174,6 +190,7 @@ export function VehicleForm({
       gpsProvider: vehicle.gpsProvider || "",
       gpsUsername: vehicle.gpsUsername || "",
       gpsPassword: vehicle.gpsPassword || "",
+      province: vehicle.province || "",
       imageUrl: vehicle.imageUrl || "",
     } : {
       operatorId: "",
@@ -182,6 +199,55 @@ export function VehicleForm({
       imageUrl: "",
     },
   })
+
+  // Reset form values when vehicle prop changes (for edit mode)
+  useEffect(() => {
+    if (vehicle) {
+      const operatorId = vehicle.operatorId ? String(vehicle.operatorId) : ""
+      const vehicleTypeId = vehicle.vehicleTypeId ? String(vehicle.vehicleTypeId) : ""
+      
+      const formValues = {
+        plateNumber: vehicle.plateNumber || "",
+        operatorId: operatorId,
+        vehicleTypeId: vehicleTypeId,
+        seatCapacity: vehicle.seatCapacity || 1,
+        bedCapacity: vehicle.bedCapacity ?? 0,
+        chassisNumber: vehicle.chassisNumber || "",
+        engineNumber: vehicle.engineNumber || "",
+        insuranceExpiryDate: formatDateForInput(vehicle.insuranceExpiryDate),
+        inspectionExpiryDate: formatDateForInput(vehicle.inspectionExpiryDate),
+        cargoLength: vehicle.cargoLength || undefined,
+        cargoWidth: vehicle.cargoWidth || undefined,
+        cargoHeight: vehicle.cargoHeight || undefined,
+        gpsProvider: vehicle.gpsProvider || "",
+        gpsUsername: vehicle.gpsUsername || "",
+        gpsPassword: vehicle.gpsPassword || "",
+        province: vehicle.province || "",
+        imageUrl: vehicle.imageUrl || "",
+      }
+      
+      console.log("Resetting form with vehicle data:", { 
+        vehicle, 
+        formValues,
+        operatorId,
+        operatorsLoaded: operators.length > 0 
+      })
+      
+      // Reset form values
+      reset(formValues)
+      setVehicleImage(vehicle.imageUrl || null)
+      
+    } else {
+      // Reset to default for create mode
+      reset({
+        operatorId: "",
+        seatCapacity: 1,
+        bedCapacity: 0,
+        imageUrl: "",
+      })
+      setVehicleImage(null)
+    }
+  }, [vehicle, reset, setValue, operators.length])
 
   const onSubmit = async (data: VehicleFormData) => {
     console.log("Form submitted with data:", data)
@@ -197,6 +263,9 @@ export function VehicleForm({
       if (submitData.cargoWidth === undefined) delete submitData.cargoWidth
       if (submitData.cargoHeight === undefined) delete submitData.cargoHeight
       
+      // Note: operatorId và vehicleTypeId cần được gửi đi kể cả khi rỗng để backend có thể cập nhật/xóa
+      // Không xóa các field này như các optional fields khác
+      
       // Remove empty strings for optional fields
       if (submitData.chassisNumber === "") delete submitData.chassisNumber
       if (submitData.engineNumber === "") delete submitData.engineNumber
@@ -205,6 +274,7 @@ export function VehicleForm({
       if (submitData.gpsProvider === "") delete submitData.gpsProvider
       if (submitData.gpsUsername === "") delete submitData.gpsUsername
       if (submitData.gpsPassword === "") delete submitData.gpsPassword
+      if (submitData.province === "") delete submitData.province
       
       console.log("Submitting data:", submitData)
       
@@ -253,18 +323,25 @@ export function VehicleForm({
                   <Label htmlFor="operatorId" className="text-sm">
                     Nhà xe
                   </Label>
-                  <Select
-                    id="operatorId"
-                    className="h-11"
-                    {...register("operatorId")}
-                  >
-                    <option value="">Chọn nhà xe</option>
-                    {operators.map((op) => (
-                      <option key={op.id} value={op.id}>
-                        {op.name}
-                      </option>
-                    ))}
-                  </Select>
+                  <Controller
+                    name="operatorId"
+                    control={control}
+                    render={({ field }) => (
+                      <Select
+                        id="operatorId"
+                        className="h-11"
+                        {...field}
+                        value={field.value || ""}
+                      >
+                        <option value="">Chọn nhà xe</option>
+                        {operators.map((op) => (
+                          <option key={op.id} value={op.id}>
+                            {op.name}
+                          </option>
+                        ))}
+                      </Select>
+                    )}
+                  />
                   {errors.operatorId && (
                     <p className="text-sm text-red-600">{errors.operatorId.message}</p>
                   )}
@@ -347,6 +424,27 @@ export function VehicleForm({
                     placeholder="Số máy"
                     {...register("engineNumber")}
                   />
+                </div>
+              </div>
+
+              {/* Hàng 3: Tỉnh */}
+              <div className="grid grid-cols-12 gap-4">
+                <div className="space-y-2 col-span-6">
+                  <Label htmlFor="province" className="text-sm">
+                    Tỉnh/Thành phố
+                  </Label>
+                  <Select
+                    id="province"
+                    className="h-11"
+                    {...register("province")}
+                  >
+                    <option value="">Chọn tỉnh/thành phố</option>
+                    {provinces.map((province) => (
+                      <option key={province.code} value={province.name}>
+                        {province.name}
+                      </option>
+                    ))}
+                  </Select>
                 </div>
               </div>
             </div>

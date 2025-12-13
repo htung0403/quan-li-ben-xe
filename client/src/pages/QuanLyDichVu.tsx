@@ -12,39 +12,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Select } from "@/components/ui/select"
 import { StatusBadge } from "@/components/layout/StatusBadge"
+import { ServiceDialog } from "@/components/service/ServiceDialog"
 import { serviceService } from "@/services/service.service"
-import type { Service, ServiceInput } from "@/types"
+import type { Service } from "@/types"
 import { useUIStore } from "@/store/ui.store"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { z } from "zod"
-
-const serviceSchema = z.object({
-  code: z.string().min(1, "Mã dịch vụ là bắt buộc"),
-  name: z.string().min(1, "Tên dịch vụ là bắt buộc"),
-  unit: z.string().min(1, "Đơn vị tính là bắt buộc"),
-  taxPercentage: z.number().min(0, "Phần trăm thuế phải >= 0").max(100, "Phần trăm thuế phải <= 100"),
-  materialType: z.string().min(1, "Loại vật tư/hàng hóa là bắt buộc"),
-  useQuantityFormula: z.boolean().default(false),
-  usePriceFormula: z.boolean().default(false),
-  displayOrder: z.number().min(0, "Thứ tự hiển thị phải >= 0"),
-  isDefault: z.boolean().default(false),
-  autoCalculateQuantity: z.boolean().default(false),
-  isActive: z.boolean().default(true),
-})
-
-type ServiceFormData = z.infer<typeof serviceSchema>
-
-const MATERIAL_TYPES = ["Vật tư", "Hàng hóa", "Dịch vụ"]
 
 export default function QuanLyDichVu() {
   const [services, setServices] = useState<Service[]>([])
@@ -56,60 +30,10 @@ export default function QuanLyDichVu() {
   const [viewMode, setViewMode] = useState<"create" | "edit" | "view">("create")
   const setTitle = useUIStore((state) => state.setTitle)
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<ServiceFormData>({
-    resolver: zodResolver(serviceSchema),
-    defaultValues: {
-      useQuantityFormula: false,
-      usePriceFormula: false,
-      displayOrder: 0,
-      isDefault: false,
-      autoCalculateQuantity: false,
-      isActive: true,
-      taxPercentage: 0,
-    },
-  })
-
   useEffect(() => {
     setTitle("Quản lý dịch vụ")
     loadServices()
   }, [setTitle])
-
-  useEffect(() => {
-    if (selectedService && (viewMode === "edit" || viewMode === "view")) {
-      reset({
-        code: selectedService.code,
-        name: selectedService.name,
-        unit: selectedService.unit,
-        taxPercentage: selectedService.taxPercentage,
-        materialType: selectedService.materialType,
-        useQuantityFormula: selectedService.useQuantityFormula,
-        usePriceFormula: selectedService.usePriceFormula,
-        displayOrder: selectedService.displayOrder,
-        isDefault: selectedService.isDefault,
-        autoCalculateQuantity: selectedService.autoCalculateQuantity,
-        isActive: selectedService.isActive,
-      })
-    } else {
-      reset({
-        code: "",
-        name: "",
-        unit: "",
-        taxPercentage: 0,
-        materialType: "",
-        useQuantityFormula: false,
-        usePriceFormula: false,
-        displayOrder: 0,
-        isDefault: false,
-        autoCalculateQuantity: false,
-        isActive: true,
-      })
-    }
-  }, [selectedService, viewMode, reset])
 
   const loadServices = async () => {
     setIsLoading(true)
@@ -151,16 +75,30 @@ export default function QuanLyDichVu() {
     setDialogOpen(true)
   }
 
-  const handleEdit = (service: Service) => {
-    setSelectedService(service)
-    setViewMode("edit")
-    setDialogOpen(true)
+  const handleEdit = async (service: Service) => {
+    try {
+      // Load đầy đủ thông tin dịch vụ bao gồm biểu thức đã chọn
+      const fullService = await serviceService.getById(service.id)
+      setSelectedService(fullService)
+      setViewMode("edit")
+      setDialogOpen(true)
+    } catch (error) {
+      console.error("Failed to load service details:", error)
+      toast.error("Không thể tải thông tin dịch vụ. Vui lòng thử lại sau.")
+    }
   }
 
-  const handleView = (service: Service) => {
-    setSelectedService(service)
-    setViewMode("view")
-    setDialogOpen(true)
+  const handleView = async (service: Service) => {
+    try {
+      // Load đầy đủ thông tin dịch vụ bao gồm biểu thức đã chọn
+      const fullService = await serviceService.getById(service.id)
+      setSelectedService(fullService)
+      setViewMode("view")
+      setDialogOpen(true)
+    } catch (error) {
+      console.error("Failed to load service details:", error)
+      toast.error("Không thể tải thông tin dịch vụ. Vui lòng thử lại sau.")
+    }
   }
 
   const handleDelete = async (id: string) => {
@@ -184,41 +122,6 @@ export default function QuanLyDichVu() {
     } catch (error) {
       console.error("Failed to toggle service status:", error)
       toast.error("Không thể thay đổi trạng thái dịch vụ")
-    }
-  }
-
-  const onSubmit = async (data: ServiceFormData) => {
-    try {
-      const serviceData: ServiceInput & { isActive?: boolean } = {
-        code: data.code,
-        name: data.name,
-        unit: data.unit,
-        taxPercentage: data.taxPercentage,
-        materialType: data.materialType,
-        useQuantityFormula: data.useQuantityFormula,
-        usePriceFormula: data.usePriceFormula,
-        displayOrder: data.displayOrder,
-        isDefault: data.isDefault,
-        autoCalculateQuantity: data.autoCalculateQuantity,
-      }
-
-      if (viewMode === "create") {
-        // For create, include isActive in the data
-        await serviceService.create({ ...serviceData, isActive: data.isActive } as any)
-        toast.success("Thêm dịch vụ thành công")
-      } else if (viewMode === "edit" && selectedService) {
-        // For update, include isActive
-        await serviceService.update(selectedService.id, { ...serviceData, isActive: data.isActive } as any)
-        toast.success("Cập nhật dịch vụ thành công")
-      }
-      setDialogOpen(false)
-      loadServices()
-    } catch (error: any) {
-      console.error("Failed to save service:", error)
-      toast.error(
-        error.response?.data?.message ||
-          `Không thể ${viewMode === "create" ? "thêm" : "cập nhật"} dịch vụ. Vui lòng thử lại.`
-      )
     }
   }
 
@@ -379,249 +282,13 @@ export default function QuanLyDichVu() {
       </Card>
 
       {/* Dialog */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="w-[95vw] sm:w-[90vw] md:w-[85vw] lg:w-[900px] max-w-4xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto p-4 sm:p-6">
-          <DialogHeader>
-            <DialogTitle className="text-xl sm:text-2xl">
-              {viewMode === "create" && "Thêm dịch vụ mới"}
-              {viewMode === "edit" && "Sửa thông tin dịch vụ"}
-              {viewMode === "view" && "Chi tiết dịch vụ"}
-            </DialogTitle>
-          </DialogHeader>
-          <form onSubmit={handleSubmit(onSubmit)} className="mt-4 space-y-4 sm:space-y-6">
-            {/* Thông tin chung */}
-            <div className="space-y-3 sm:space-y-4">
-              <h3 className="text-base sm:text-lg font-semibold text-gray-800 border-b pb-2">
-                Thông tin chung
-              </h3>
-              
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="code">
-                    Mã dịch vụ <span className="text-red-500">(*)</span>
-                  </Label>
-                  <Input
-                    id="code"
-                    placeholder="Mã dịch vụ"
-                    {...register("code")}
-                    disabled={viewMode === "view"}
-                    className={errors.code ? "border-red-500" : ""}
-                  />
-                  {errors.code && (
-                    <p className="text-sm text-red-500 mt-1">
-                      {errors.code.message}
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <Label htmlFor="name">
-                    Tên dịch vụ <span className="text-red-500">(*)</span>
-                  </Label>
-                  <Input
-                    id="name"
-                    placeholder="Tên dịch vụ"
-                    {...register("name")}
-                    disabled={viewMode === "view"}
-                    className={errors.name ? "border-red-500" : ""}
-                  />
-                  {errors.name && (
-                    <p className="text-sm text-red-500 mt-1">
-                      {errors.name.message}
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <Label htmlFor="unit">
-                    Đơn vị tính <span className="text-red-500">(*)</span>
-                  </Label>
-                  <Input
-                    id="unit"
-                    placeholder="Đơn vị tính"
-                    {...register("unit")}
-                    disabled={viewMode === "view"}
-                    className={errors.unit ? "border-red-500" : ""}
-                  />
-                  {errors.unit && (
-                    <p className="text-sm text-red-500 mt-1">
-                      {errors.unit.message}
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <Label htmlFor="taxPercentage">
-                    Phần trăm thuế (%) <span className="text-red-500">(*)</span>
-                  </Label>
-                  <Input
-                    id="taxPercentage"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    max="100"
-                    placeholder="0"
-                    {...register("taxPercentage", { valueAsNumber: true })}
-                    disabled={viewMode === "view"}
-                    className={errors.taxPercentage ? "border-red-500" : ""}
-                  />
-                  {errors.taxPercentage && (
-                    <p className="text-sm text-red-500 mt-1">
-                      {errors.taxPercentage.message}
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <Label htmlFor="materialType">
-                    Loại vật tư/hàng hóa <span className="text-red-500">(*)</span>
-                  </Label>
-                  <Select
-                    id="materialType"
-                    {...register("materialType")}
-                    disabled={viewMode === "view"}
-                    className={errors.materialType ? "border-red-500" : ""}
-                  >
-                    <option value="">Chọn loại</option>
-                    {MATERIAL_TYPES.map((type) => (
-                      <option key={type} value={type}>
-                        {type}
-                      </option>
-                    ))}
-                  </Select>
-                  {errors.materialType && (
-                    <p className="text-sm text-red-500 mt-1">
-                      {errors.materialType.message}
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <Label htmlFor="displayOrder">
-                    Thứ tự hiển thị <span className="text-red-500">(*)</span>
-                  </Label>
-                  <Input
-                    id="displayOrder"
-                    type="number"
-                    min="0"
-                    placeholder="0"
-                    {...register("displayOrder", { valueAsNumber: true })}
-                    disabled={viewMode === "view"}
-                    className={errors.displayOrder ? "border-red-500" : ""}
-                  />
-                  {errors.displayOrder && (
-                    <p className="text-sm text-red-500 mt-1">
-                      {errors.displayOrder.message}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Cài đặt */}
-            <div className="space-y-3 sm:space-y-4">
-              <h3 className="text-base sm:text-lg font-semibold text-gray-800 border-b pb-2">
-                Cài đặt
-              </h3>
-              
-              <div className="space-y-3">
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    id="useQuantityFormula"
-                    {...register("useQuantityFormula")}
-                    disabled={viewMode === "view"}
-                    className="h-4 w-4"
-                  />
-                  <Label htmlFor="useQuantityFormula" className="cursor-pointer">
-                    Sử dụng công thức tính số lượng
-                  </Label>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    id="usePriceFormula"
-                    {...register("usePriceFormula")}
-                    disabled={viewMode === "view"}
-                    className="h-4 w-4"
-                  />
-                  <Label htmlFor="usePriceFormula" className="cursor-pointer">
-                    Sử dụng công thức tính đơn giá
-                  </Label>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    id="isDefault"
-                    {...register("isDefault")}
-                    disabled={viewMode === "view"}
-                    className="h-4 w-4"
-                  />
-                  <Label htmlFor="isDefault" className="cursor-pointer">
-                    Mặc định chọn
-                  </Label>
-                </div>
-
-                <div className="flex items-center space-x-2">
-                  <input
-                    type="checkbox"
-                    id="autoCalculateQuantity"
-                    {...register("autoCalculateQuantity")}
-                    disabled={viewMode === "view"}
-                    className="h-4 w-4"
-                  />
-                  <Label htmlFor="autoCalculateQuantity" className="cursor-pointer">
-                    Tự động tính số lượng
-                  </Label>
-                </div>
-
-                {viewMode !== "view" && (
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id="isActive"
-                      {...register("isActive")}
-                      className="h-4 w-4"
-                    />
-                    <Label htmlFor="isActive" className="cursor-pointer">
-                      Kích hoạt
-                    </Label>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {viewMode === "view" && selectedService && (
-              <div>
-                <Label>Trạng thái</Label>
-                <div className="mt-2">
-                  <StatusBadge
-                    status={selectedService.isActive ? "active" : "inactive"}
-                  />
-                </div>
-              </div>
-            )}
-
-            <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-2 pt-4 border-t">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setDialogOpen(false)}
-                className="w-full sm:w-auto"
-              >
-                {viewMode === "view" ? "Đóng" : "Hủy"}
-              </Button>
-              {viewMode !== "view" && (
-                <Button type="submit" className="w-full sm:w-auto">
-                  {viewMode === "create" ? "Thêm" : "Cập nhật"}
-                </Button>
-              )}
-            </div>
-          </form>
-        </DialogContent>
-      </Dialog>
+      <ServiceDialog
+        open={dialogOpen}
+        onOpenChange={setDialogOpen}
+        viewMode={viewMode}
+        selectedService={selectedService}
+        onSuccess={loadServices}
+      />
     </div>
   )
 }
