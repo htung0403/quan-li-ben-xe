@@ -228,6 +228,7 @@ export function CapPhepDialog({
         permitStatus: "approved",
         routeId,
         scheduleId,
+        replacementVehicleId: replacementVehicleId || undefined,
       });
 
       toast.success("Cấp phép lên nốt thành công!");
@@ -313,6 +314,7 @@ export function CapPhepDialog({
         rejectionReason: rejectionReason,
         routeId: routeId || undefined,
         scheduleId: scheduleId || undefined,
+        replacementVehicleId: replacementVehicleId || undefined,
       });
 
       toast.success("Cấp phép thành công!");

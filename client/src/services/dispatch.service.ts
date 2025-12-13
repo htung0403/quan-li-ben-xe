@@ -41,6 +41,7 @@ export const dispatchService = {
       rejectionReason?: string
       routeId?: string
       scheduleId?: string
+      replacementVehicleId?: string
     }
   ): Promise<DispatchRecord> => {
     const response = await api.post<DispatchRecord>(`/dispatch/${id}/permit`, data)

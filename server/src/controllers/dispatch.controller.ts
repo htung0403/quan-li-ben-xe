@@ -436,17 +436,36 @@ export const recordPassengerDrop = async (req: AuthRequest, res: Response) => {
 export const issuePermit = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params
-    const { transportOrderCode, plannedDepartureTime, seatCount, permitStatus, rejectionReason, routeId, scheduleId } = req.body
+    const { transportOrderCode, plannedDepartureTime, seatCount, permitStatus, rejectionReason, routeId, scheduleId, replacementVehicleId } = req.body
     const userId = req.user?.id
 
     if (!transportOrderCode && permitStatus !== 'rejected') {
       return res.status(400).json({ error: 'Transport order code is required for approval' })
     }
 
+    // Get current metadata to preserve existing data
+    const { data: currentRecord } = await supabase
+      .from('dispatch_records')
+      .select('metadata')
+      .eq('id', id)
+      .single()
+
+    const currentMetadata = currentRecord?.metadata || {}
+    const newMetadata = { ...currentMetadata }
+
+    // Update replacement vehicle ID in metadata if provided
+    if (replacementVehicleId) {
+      newMetadata.replacementVehicleId = replacementVehicleId
+    } else if (replacementVehicleId === null || replacementVehicleId === '') {
+      // Remove replacement vehicle ID if explicitly set to empty
+      delete newMetadata.replacementVehicleId
+    }
+
     const updateData: any = {
       boarding_permit_time: getCurrentVietnamTime(),
       boarding_permit_by: userId || null,
       permit_status: permitStatus || 'approved',
+      metadata: newMetadata,
     }
 
     // Set routeId if provided

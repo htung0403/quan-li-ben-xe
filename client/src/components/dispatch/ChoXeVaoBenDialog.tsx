@@ -13,7 +13,8 @@ import { routeService } from "@/services/route.service"
 import { scheduleService } from "@/services/schedule.service"
 import { dispatchService } from "@/services/dispatch.service"
 import { driverService } from "@/services/driver.service"
-import type { Route, Schedule, Driver, DispatchInput } from "@/types"
+import { CapPhepDialog } from "./CapPhepDialog"
+import type { Route, Schedule, Driver, DispatchInput, DispatchRecord } from "@/types"
 import { cn } from "@/lib/utils"
 
 interface ChoXeVaoBenDialogProps {
@@ -50,6 +51,8 @@ export function ChoXeVaoBenDialog({
   const [transportOrderDisplay] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [isAnimating, setIsAnimating] = useState(false)
+  const [showPermitDialog, setShowPermitDialog] = useState(false)
+  const [permitDispatchRecord, setPermitDispatchRecord] = useState<DispatchRecord | null>(null)
 
   useEffect(() => {
     if (open) {
@@ -224,25 +227,42 @@ export function ChoXeVaoBenDialog({
       const result = await dispatchService.create(dispatchData)
       
       // If passenger drop is confirmed, record it with routeId if provided
+      let updatedRecord = result
       if (confirmPassengerDrop && passengersArrived) {
-        await dispatchService.recordPassengerDrop(
+        updatedRecord = await dispatchService.recordPassengerDrop(
           result.id,
           parseInt(passengersArrived),
           routeId || undefined
         )
       }
 
+      toast.success("Cho xe vào bến thành công!")
+
       // If perform permit after entry is checked, automatically open permit dialog
       if (performPermitAfterEntry) {
-        // This will be handled by the parent component
+        // Fetch full dispatch record with all related data
+        try {
+          const fullRecord = await dispatchService.getById(updatedRecord.id)
+          setPermitDispatchRecord(fullRecord)
+          setShowPermitDialog(true)
+          // Don't close this dialog yet, let user complete the permit process
+          // The permit dialog will handle closing both dialogs
+        } catch (error) {
+          console.error("Failed to load dispatch record for permit:", error)
+          toast.error("Không thể tải dữ liệu để cấp phép. Vui lòng thử lại sau.")
+          // Close dialog normally if we can't load permit data
+          if (onSuccess) {
+            onSuccess()
+          }
+          onClose()
+        }
+      } else {
+        // Normal flow: close dialog and call onSuccess
+        if (onSuccess) {
+          onSuccess()
+        }
+        onClose()
       }
-
-      toast.success("Cho xe vào bến thành công!")
-      
-      if (onSuccess) {
-        onSuccess()
-      }
-      onClose()
     } catch (error) {
       console.error("Failed to create dispatch record:", error)
       toast.error("Không thể tạo bản ghi điều độ. Vui lòng thử lại sau.")
@@ -252,6 +272,10 @@ export function ChoXeVaoBenDialog({
   }
 
   const handleClose = () => {
+    // Don't close if permit dialog is open
+    if (showPermitDialog) {
+      return
+    }
     setIsAnimating(false)
     setTimeout(() => {
       onClose()
@@ -534,6 +558,32 @@ export function ChoXeVaoBenDialog({
           </form>
         </div>
       </div>
+
+      {/* Cap Phep Dialog - opened automatically after successful entry */}
+      {showPermitDialog && permitDispatchRecord && (
+        <CapPhepDialog
+          record={permitDispatchRecord}
+          open={showPermitDialog}
+          onClose={() => {
+            setShowPermitDialog(false)
+            setPermitDispatchRecord(null)
+            // Close the entry dialog after permit dialog closes
+            if (onSuccess) {
+              onSuccess()
+            }
+            onClose()
+          }}
+          onSuccess={() => {
+            setShowPermitDialog(false)
+            setPermitDispatchRecord(null)
+            // Close the entry dialog after permit is issued
+            if (onSuccess) {
+              onSuccess()
+            }
+            onClose()
+          }}
+        />
+      )}
     </div>,
     document.body
   )

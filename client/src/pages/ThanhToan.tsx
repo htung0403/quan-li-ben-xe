@@ -66,6 +66,7 @@ export default function ThanhToan() {
 
   // List view state
   const [listData, setListData] = useState<DispatchRecord[]>([])
+  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set())
   const [dateRange, setDateRange] = useState<DateRange | undefined>(() => {
     const today = new Date()
     const fromDate = new Date(today.setHours(0, 0, 0, 0))
@@ -129,6 +130,18 @@ export default function ThanhToan() {
       filtered.sort((a, b) => new Date(b.entryTime).getTime() - new Date(a.entryTime).getTime())
       
       setListData(filtered)
+      
+      // Clear selection for items that no longer exist or have been paid
+      setSelectedItems(prev => {
+        const newSet = new Set<string>()
+        prev.forEach(itemId => {
+          const item = filtered.find(i => i.id === itemId)
+          if (item && item.currentStatus !== 'paid' && item.currentStatus !== 'departed') {
+            newSet.add(itemId)
+          }
+        })
+        return newSet
+      })
     } catch (error) {
       console.error("Failed to load list data:", error)
       toast.error("Không thể tải danh sách đơn hàng")
@@ -370,6 +383,33 @@ export default function ThanhToan() {
     }
   }
 
+  const toggleItemSelection = (itemId: string) => {
+    setSelectedItems(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(itemId)) {
+        newSet.delete(itemId)
+      } else {
+        newSet.add(itemId)
+      }
+      return newSet
+    })
+  }
+
+  const handleBatchPayment = () => {
+    if (selectedItems.size === 0) {
+      toast.warning("Vui lòng chọn ít nhất một đơn hàng để thanh toán")
+      return
+    }
+
+    // Get the first selected item
+    const selectedRecord = listData.find(item => selectedItems.has(item.id))
+    
+    if (selectedRecord) {
+      // Navigate to payment page for the selected item
+      navigate(`/thanh-toan/${selectedRecord.id}`)
+    }
+  }
+
   // Render List View if no ID
   if (!id) {
     return (
@@ -417,6 +457,16 @@ export default function ThanhToan() {
                 <Button variant="ghost" size="icon" title="In"><Printer className="h-4 w-4" /></Button>
                 <Button variant="ghost" size="icon" title="Quét"><ScanLine className="h-4 w-4" /></Button> */}
                 <Button variant="ghost" size="icon" title="Tải lại" onClick={loadListData}><RotateCw className="h-4 w-4" /></Button>
+                {selectedItems.size > 0 && (
+                  <Button 
+                    variant="default" 
+                    size="sm" 
+                    className="gap-2 bg-green-600 hover:bg-green-700 ml-2"
+                    onClick={handleBatchPayment}
+                  >
+                    THANH TOÁN {selectedItems.size > 1 ? `(${selectedItems.size})` : ''}
+                  </Button>
+                )}
             </div>
             <div>
                  <Button variant="secondary" size="sm" className="gap-2">
@@ -461,31 +511,43 @@ export default function ThanhToan() {
                             </TableCell>
                         </TableRow>
                     ) : (
-                        listData.map(item => (
-                            <TableRow key={item.id} className="cursor-pointer hover:bg-gray-50" onClick={() => navigate(`/thanh-toan/${item.id}`)}>
-                                <TableCell><Checkbox onClick={(e) => e.stopPropagation()} /></TableCell>
-                                <TableCell>{item.transportOrderCode || item.id.substring(0, 8)}</TableCell>
-                                <TableCell>{item.vehiclePlateNumber}</TableCell>
-                                <TableCell>{item.vehicle?.operator?.name}</TableCell>
-                                <TableCell>{item.routeName}</TableCell>
-                                <TableCell>{item.plannedDepartureTime ? format(new Date(item.plannedDepartureTime), "HH:mm") : "-"}</TableCell>
-                                <TableCell>{format(new Date(item.entryTime), "dd/MM/yyyy HH:mm")}</TableCell>
-                                <TableCell>{format(new Date(item.entryTime), "dd/MM/yyyy")}</TableCell>
-                                <TableCell>{item.entryBy || "-"}</TableCell>
-                                <TableCell>-</TableCell>
-                                <TableCell>{item.paymentAmount?.toLocaleString('vi-VN') || 0}</TableCell>
-                                <TableCell>
-                                    <span className={`px-2 py-1 rounded-full text-xs ${
-                                        item.currentStatus === 'paid' ? 'bg-green-100 text-green-800' : 
-                                        item.currentStatus === 'departed' ? 'bg-gray-100 text-gray-800' : 
-                                        'bg-yellow-100 text-yellow-800'
-                                    }`}>
-                                        {item.currentStatus === 'paid' ? 'Đã thanh toán' : 
-                                         item.currentStatus === 'departed' ? 'Đã xuất bến' : 'Chưa thanh toán'}
-                                    </span>
-                                </TableCell>
-                            </TableRow>
-                        ))
+                        listData.map(item => {
+                            const isPaid = item.currentStatus === 'paid' || item.currentStatus === 'departed'
+                            const isSelected = selectedItems.has(item.id)
+                            
+                            return (
+                                <TableRow key={item.id}>
+                                    <TableCell>
+                                        {!isPaid && (
+                                            <Checkbox 
+                                                checked={isSelected}
+                                                onChange={() => toggleItemSelection(item.id)}
+                                            />
+                                        )}
+                                    </TableCell>
+                                    <TableCell>{item.transportOrderCode || item.id.substring(0, 8)}</TableCell>
+                                    <TableCell>{item.vehiclePlateNumber}</TableCell>
+                                    <TableCell>{item.vehicle?.operator?.name}</TableCell>
+                                    <TableCell>{item.routeName}</TableCell>
+                                    <TableCell>{item.plannedDepartureTime ? format(new Date(item.plannedDepartureTime), "HH:mm") : "-"}</TableCell>
+                                    <TableCell>{format(new Date(item.entryTime), "dd/MM/yyyy HH:mm")}</TableCell>
+                                    <TableCell>{format(new Date(item.entryTime), "dd/MM/yyyy")}</TableCell>
+                                    <TableCell>{item.entryBy || "-"}</TableCell>
+                                    <TableCell>-</TableCell>
+                                    <TableCell>{item.paymentAmount?.toLocaleString('vi-VN') || 0}</TableCell>
+                                    <TableCell>
+                                        <span className={`px-2 py-1 rounded-full text-xs ${
+                                            item.currentStatus === 'paid' ? 'bg-green-100 text-green-800' : 
+                                            item.currentStatus === 'departed' ? 'bg-gray-100 text-gray-800' : 
+                                            'bg-yellow-100 text-yellow-800'
+                                        }`}>
+                                            {item.currentStatus === 'paid' ? 'Đã thanh toán' : 
+                                             item.currentStatus === 'departed' ? 'Đã xuất bến' : 'Chưa thanh toán'}
+                                        </span>
+                                    </TableCell>
+                                </TableRow>
+                            )
+                        })
                     )}
                 </TableBody>
             </Table>

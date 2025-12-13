@@ -116,8 +116,8 @@ export const createOperator = async (req: Request, res: Response) => {
         tax_code: validated.taxCode || null,
         
         is_ticket_delegated: validated.isTicketDelegated || false,
-        province: validated.province || null,
-        district: validated.district || null,
+        province: validated.province && validated.province.trim() !== '' ? validated.province.trim() : null,
+        district: validated.district && validated.district.trim() !== '' ? validated.district.trim() : null,
         address: validated.address || null,
         
         phone: validated.phone || null,
@@ -175,8 +175,8 @@ export const updateOperator = async (req: Request, res: Response) => {
     if (validated.taxCode !== undefined) updateData.tax_code = validated.taxCode || null
     
     if (validated.isTicketDelegated !== undefined) updateData.is_ticket_delegated = validated.isTicketDelegated
-    if (validated.province !== undefined) updateData.province = validated.province || null
-    if (validated.district !== undefined) updateData.district = validated.district || null
+    if (validated.province !== undefined) updateData.province = validated.province && validated.province.trim() !== '' ? validated.province.trim() : null
+    if (validated.district !== undefined) updateData.district = validated.district && validated.district.trim() !== '' ? validated.district.trim() : null
     if (validated.address !== undefined) updateData.address = validated.address || null
     
     if (validated.phone !== undefined) updateData.phone = validated.phone || null
