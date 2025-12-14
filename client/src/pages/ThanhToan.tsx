@@ -13,7 +13,6 @@ import {
   RefreshCw,
   FileSpreadsheet,
   RotateCw,
-  Search,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -65,8 +64,10 @@ export default function ThanhToan() {
   const serviceDropdownRef = useRef<HTMLDivElement>(null)
 
   // List view state
+  const [allData, setAllData] = useState<DispatchRecord[]>([])
   const [listData, setListData] = useState<DispatchRecord[]>([])
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set())
+  const [orderType, setOrderType] = useState<string>("all")
   const [dateRange, setDateRange] = useState<DateRange | undefined>(() => {
     const today = new Date()
     const fromDate = new Date(today.setHours(0, 0, 0, 0))
@@ -100,48 +101,66 @@ export default function ThanhToan() {
     }
   }, [id, setTitle])
 
+  // Auto-filter when dateRange or orderType changes
+  useEffect(() => {
+    if (!id && allData.length > 0) {
+      applyFilters()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [dateRange, orderType, allData.length, id])
+
+  const applyFilters = () => {
+    let filtered = [...allData]
+    
+    // Filter by date
+    if (dateRange?.from && dateRange?.to) {
+      const fromDate = new Date(dateRange.from)
+      fromDate.setHours(0, 0, 0, 0)
+      const toDate = new Date(dateRange.to)
+      toDate.setHours(23, 59, 59, 999)
+      filtered = filtered.filter(record => {
+        const entryTime = new Date(record.entryTime)
+        return entryTime >= fromDate && entryTime <= toDate
+      })
+    } else if (dateRange?.from) {
+      const fromDate = new Date(dateRange.from)
+      fromDate.setHours(0, 0, 0, 0)
+      filtered = filtered.filter(record => {
+        const entryTime = new Date(record.entryTime)
+        return entryTime >= fromDate
+      })
+    }
+    
+    // Filter by order type (if needed in the future)
+    // For now, orderType filter is not implemented as there's no field in DispatchRecord
+    // This can be extended later based on business requirements
+    
+    // Sort by entry time desc
+    filtered.sort((a, b) => new Date(b.entryTime).getTime() - new Date(a.entryTime).getTime())
+    
+    setListData(filtered)
+    
+    // Clear selection for items that no longer exist or have been paid
+    setSelectedItems(prev => {
+      const newSet = new Set<string>()
+      prev.forEach(itemId => {
+        const item = filtered.find(i => i.id === itemId)
+        if (item && item.currentStatus !== 'paid' && item.currentStatus !== 'departed') {
+          newSet.add(itemId)
+        }
+      })
+      return newSet
+    })
+  }
+
   const loadListData = async () => {
     setIsLoading(true)
     try {
       // Fetch all records
       const data = await dispatchService.getAll()
+      setAllData(data)
       
-      // Filter by date (client-side for now)
-      let filtered = data
-      if (dateRange?.from && dateRange?.to) {
-        const fromDate = new Date(dateRange.from)
-        fromDate.setHours(0, 0, 0, 0)
-        const toDate = new Date(dateRange.to)
-        toDate.setHours(23, 59, 59, 999)
-        filtered = data.filter(record => {
-          const entryTime = new Date(record.entryTime)
-          return entryTime >= fromDate && entryTime <= toDate
-        })
-      } else if (dateRange?.from) {
-        const fromDate = new Date(dateRange.from)
-        fromDate.setHours(0, 0, 0, 0)
-        filtered = data.filter(record => {
-          const entryTime = new Date(record.entryTime)
-          return entryTime >= fromDate
-        })
-      }
-      
-      // Sort by entry time desc
-      filtered.sort((a, b) => new Date(b.entryTime).getTime() - new Date(a.entryTime).getTime())
-      
-      setListData(filtered)
-      
-      // Clear selection for items that no longer exist or have been paid
-      setSelectedItems(prev => {
-        const newSet = new Set<string>()
-        prev.forEach(itemId => {
-          const item = filtered.find(i => i.id === itemId)
-          if (item && item.currentStatus !== 'paid' && item.currentStatus !== 'departed') {
-            newSet.add(itemId)
-          }
-        })
-        return newSet
-      })
+      // Apply filters will be triggered by useEffect
     } catch (error) {
       console.error("Failed to load list data:", error)
       toast.error("Không thể tải danh sách đơn hàng")
@@ -417,19 +436,19 @@ export default function ThanhToan() {
         {/* Filters */}
         <div className="bg-white p-4 rounded-lg shadow-sm mb-4">
             <div className="flex flex-wrap items-end gap-4">
-                <div className="w-64">
+                <div className="w-96">
                     <Label className="text-xs text-gray-500 mb-1 block">Khoảng thời gian (*)</Label>
                     <DatePickerRange
                       range={dateRange}
                       onRangeChange={setDateRange}
                       placeholder="Chọn khoảng thời gian"
                       label=""
-                      className="w-full space-y-0"
+                      className="w-full"
                     />
                 </div>
                 <div className="w-48">
                     <Label className="text-xs text-gray-500 mb-1 block">Loại đơn hàng (*)</Label>
-                    <Select defaultValue="all">
+                    <Select value={orderType} onChange={(e) => setOrderType(e.target.value)}>
                         <option value="all">Tất cả</option>
                         <option value="thanh-toan-chuyen">Thanh toán chuyến</option>
                         <option value="thanh-toan-dinh-ky">Thanh toán định kỳ</option>
@@ -440,9 +459,6 @@ export default function ThanhToan() {
                         <option value="thanh-toan-vang-lai">Thanh toán vãng lai</option>
                     </Select>
                 </div>
-                <Button className="gap-2" variant="outline" onClick={loadListData}>
-                    LỌC <Search className="h-4 w-4" />
-                </Button>
             </div>
         </div>
 
@@ -841,11 +857,25 @@ export default function ThanhToan() {
             <Button variant="destructive" onClick={handleCancel}>
               HỦY THANH TOÁN
             </Button>
-            <Button variant="outline">
+            <Button 
+              variant="outline"
+              onClick={() => {
+                if (record?.vehiclePlateNumber) {
+                  navigate(`/bao-cao/xe-tra-khach?vehiclePlateNumber=${encodeURIComponent(record.vehiclePlateNumber)}&returnTo=/thanh-toan/${id}`)
+                }
+              }}
+            >
               <FileText className="mr-2 h-4 w-4" />
               LỊCH SỬ XE TRẢ KHÁCH
             </Button>
-            <Button variant="outline">
+            <Button 
+              variant="outline"
+              onClick={() => {
+                if (record?.vehiclePlateNumber) {
+                  navigate(`/bao-cao/xe-ra-vao-ben?vehiclePlateNumber=${encodeURIComponent(record.vehiclePlateNumber)}&returnTo=/thanh-toan/${id}`)
+                }
+              }}
+            >
               <FileText className="mr-2 h-4 w-4" />
               LỊCH SỬ XE RA VÀO BẾN
             </Button>

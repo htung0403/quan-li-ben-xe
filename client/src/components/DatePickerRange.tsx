@@ -147,17 +147,17 @@ export function DatePickerRange({
           {label}
         </Label>
       )}
-      <div className='flex gap-2'>
+      <div className='flex gap-2 items-center w-full min-w-0'>
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger asChild>
             <Button
               variant='outline'
               id='date-range-picker'
-              className='flex-1 justify-between font-normal'
+              className='flex-1 justify-between font-normal min-w-0'
               disabled={disabled}
             >
-              {formatDateRange(range)}
-              <ChevronDownIcon className='h-4 w-4' />
+              <span className='truncate'>{formatDateRange(range)}</span>
+              <ChevronDownIcon className='h-4 w-4 opacity-50 shrink-0 ml-2' />
             </Button>
           </PopoverTrigger>
           <PopoverContent className='w-auto overflow-hidden p-0' align='start'>
@@ -172,81 +172,79 @@ export function DatePickerRange({
             />
           </PopoverContent>
         </Popover>
-        <div className='relative'>
-          <Popover open={quickSelectOpen} onOpenChange={setQuickSelectOpen}>
-            <PopoverTrigger asChild>
-              <Button
-                variant='outline'
-                disabled={disabled}
-                className='shrink-0'
+        <Popover open={quickSelectOpen} onOpenChange={setQuickSelectOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant='outline'
+              disabled={disabled}
+              className='shrink-0 whitespace-nowrap'
+            >
+              <CalendarIcon className='h-4 w-4 mr-2 shrink-0' />
+              <span>Chọn nhanh</span>
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className='w-56 p-0' align='start'>
+            <div className='py-1 max-h-96 overflow-y-auto'>
+              {/* Quick options */}
+              <button
+                onClick={() => handleQuickSelect(getTodayRange())}
+                className='w-full px-4 py-2 text-left text-sm hover:bg-gray-100 transition-colors'
               >
-                <CalendarIcon className='h-4 w-4 mr-2' />
-                Chọn nhanh
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className='w-56 p-0' align='start'>
-              <div className='py-1 max-h-96 overflow-y-auto'>
-                {/* Quick options */}
-                <button
-                  onClick={() => handleQuickSelect(getTodayRange())}
-                  className='w-full px-4 py-2 text-left text-sm hover:bg-gray-100 transition-colors'
-                >
-                  Hôm nay
-                </button>
-                <button
-                  onClick={() => handleQuickSelect(getYesterdayRange())}
-                  className='w-full px-4 py-2 text-left text-sm hover:bg-gray-100 transition-colors'
-                >
-                  Hôm qua
-                </button>
-                <button
-                  onClick={() => handleQuickSelect(getThisWeekRange())}
-                  className='w-full px-4 py-2 text-left text-sm hover:bg-gray-100 transition-colors'
-                >
-                  Tuần này
-                </button>
-                <button
-                  onClick={() => handleQuickSelect(getLastWeekRange())}
-                  className='w-full px-4 py-2 text-left text-sm hover:bg-gray-100 transition-colors'
-                >
-                  Tuần trước
-                </button>
-                <button
-                  onClick={() => handleQuickSelect(getThisMonthRange())}
-                  className='w-full px-4 py-2 text-left text-sm hover:bg-gray-100 transition-colors'
-                >
-                  Tháng này
-                </button>
+                Hôm nay
+              </button>
+              <button
+                onClick={() => handleQuickSelect(getYesterdayRange())}
+                className='w-full px-4 py-2 text-left text-sm hover:bg-gray-100 transition-colors'
+              >
+                Hôm qua
+              </button>
+              <button
+                onClick={() => handleQuickSelect(getThisWeekRange())}
+                className='w-full px-4 py-2 text-left text-sm hover:bg-gray-100 transition-colors'
+              >
+                Tuần này
+              </button>
+              <button
+                onClick={() => handleQuickSelect(getLastWeekRange())}
+                className='w-full px-4 py-2 text-left text-sm hover:bg-gray-100 transition-colors'
+              >
+                Tuần trước
+              </button>
+              <button
+                onClick={() => handleQuickSelect(getThisMonthRange())}
+                className='w-full px-4 py-2 text-left text-sm hover:bg-gray-100 transition-colors'
+              >
+                Tháng này
+              </button>
 
-                <div className='border-t my-1' />
+              <div className='border-t my-1' />
 
-                {/* By Month */}
-                {monthNames.map((month, index) => (
-                  <button
-                    key={index}
-                    onClick={() => handleQuickSelect(getMonthRange(index + 1))}
-                    className='w-full px-4 py-2 text-left text-sm hover:bg-gray-100 transition-colors'
-                  >
-                    {month}
-                  </button>
-                ))}
+              {/* By Month */}
+              {monthNames.map((month, index) => (
+                <button
+                  key={index}
+                  onClick={() => handleQuickSelect(getMonthRange(index + 1))}
+                  className='w-full px-4 py-2 text-left text-sm hover:bg-gray-100 transition-colors'
+                >
+                  {month}
+                </button>
+              ))}
 
-                <div className='border-t my-1' />
+              <div className='border-t my-1' />
 
-                {/* By Quarter */}
-                {quarterNames.map((quarter, index) => (
-                  <button
-                    key={index}
-                    onClick={() => handleQuickSelect(getQuarterRange(index + 1))}
-                    className='w-full px-4 py-2 text-left text-sm hover:bg-gray-100 transition-colors'
-                  >
-                    {quarter}
-                  </button>
-                ))}
-              </div>
-            </PopoverContent>
-          </Popover>
-        </div>
+              {/* By Quarter */}
+              {quarterNames.map((quarter, index) => (
+                <button
+                  key={index}
+                  onClick={() => handleQuickSelect(getQuarterRange(index + 1))}
+                  className='w-full px-4 py-2 text-left text-sm hover:bg-gray-100 transition-colors'
+                >
+                  {quarter}
+                </button>
+              ))}
+            </div>
+          </PopoverContent>
+        </Popover>
       </div>
     </div>
   )

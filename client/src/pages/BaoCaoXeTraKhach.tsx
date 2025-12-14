@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { RefreshCw, Search, FileSpreadsheet } from "lucide-react";
+import { useSearchParams, useNavigate } from "react-router-dom";
+import { RefreshCw, Search, FileSpreadsheet, ArrowLeft } from "lucide-react";
 import { type DateRange } from "react-day-picker";
 import { toast } from "react-toastify";
 import { format } from "date-fns";
@@ -24,6 +25,8 @@ import { formatVietnamDateTime } from "@/lib/vietnam-time";
 import { DatePickerRange } from "@/components/DatePickerRange";
 
 export default function BaoCaoXeTraKhach() {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const setTitle = useUIStore((state) => state.setTitle);
   const [records, setRecords] = useState<DispatchRecord[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -34,11 +37,19 @@ export default function BaoCaoXeTraKhach() {
   const [sortColumn, setSortColumn] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
+  // Get vehicle plate number and return path from URL params
+  const vehiclePlateNumberFilter = searchParams.get("vehiclePlateNumber") || "";
+  const returnTo = searchParams.get("returnTo") || "";
+
   useEffect(() => {
-    setTitle("Báo cáo > Xe trả khách");
+    if (vehiclePlateNumberFilter) {
+      setTitle(`Báo cáo xe trả khách của ${vehiclePlateNumberFilter}`);
+    } else {
+      setTitle("Báo cáo > Xe trả khách");
+    }
     loadRecords();
     loadOperators();
-  }, [setTitle]);
+  }, [setTitle, vehiclePlateNumberFilter]);
 
   const loadRecords = async () => {
     setIsLoading(true);
@@ -85,6 +96,12 @@ export default function BaoCaoXeTraKhach() {
 
   const filteredRecords = useMemo(() => {
     let filtered = records.filter((item) => {
+      // Filter by vehicle plate number if provided in URL params
+      let matchesVehicle = true;
+      if (vehiclePlateNumberFilter) {
+        matchesVehicle = item.vehiclePlateNumber?.toLowerCase() === vehiclePlateNumberFilter.toLowerCase();
+      }
+      
       // Full text search - search in both plate number and route name
       let matchesSearch = true;
       if (searchQuery.trim()) {
@@ -130,7 +147,7 @@ export default function BaoCaoXeTraKhach() {
         }
       }
       
-      return matchesSearch && matchesOperator && matchesDate;
+      return matchesVehicle && matchesSearch && matchesOperator && matchesDate;
     });
 
     // Apply sorting
@@ -203,7 +220,7 @@ export default function BaoCaoXeTraKhach() {
     }
 
     return filtered;
-  }, [records, searchQuery, dateRange, selectedOperatorId, sortColumn, sortDirection]);
+  }, [records, searchQuery, dateRange, selectedOperatorId, sortColumn, sortDirection, vehiclePlateNumberFilter]);
 
   const renderTime = (value?: string) => (value ? formatVietnamDateTime(value) : "-");
 
@@ -281,6 +298,17 @@ export default function BaoCaoXeTraKhach() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0">
           <div className="flex gap-2">
+            {returnTo && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate(returnTo)}
+                className="gap-2"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Quay lại
+              </Button>
+            )}
             <Button
               variant="outline"
               size="sm"

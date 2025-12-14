@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { RefreshCw, Search, FileSpreadsheet } from "lucide-react";
+import { useSearchParams, useNavigate } from "react-router-dom";
+import { RefreshCw, Search, FileSpreadsheet, ArrowLeft } from "lucide-react";
 import { type DateRange } from "react-day-picker";
 import { toast } from "react-toastify";
 import { format } from "date-fns";
@@ -38,20 +39,30 @@ interface VehicleEntryExitData {
 }
 
 export default function BaoCaoXeRaVaoBen() {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const setTitle = useUIStore((state) => state.setTitle);
   const [data, setData] = useState<VehicleEntryExitData[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
 
+  // Get vehicle plate number and return path from URL params
+  const vehiclePlateNumberFilter = searchParams.get("vehiclePlateNumber") || "";
+  const returnTo = searchParams.get("returnTo") || "";
+
   useEffect(() => {
-    setTitle("Báo cáo > Xe ra vào bến");
-  }, [setTitle]);
+    if (vehiclePlateNumberFilter) {
+      setTitle(`Báo cáo xe ra vào bến của ${vehiclePlateNumberFilter}`);
+    } else {
+      setTitle("Báo cáo > Xe ra vào bến");
+    }
+  }, [setTitle, vehiclePlateNumberFilter]);
 
   useEffect(() => {
     loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dateRange]);
+  }, [dateRange, vehiclePlateNumberFilter]);
 
   const loadData = async () => {
     setIsLoading(true);
@@ -76,8 +87,16 @@ export default function BaoCaoXeRaVaoBen() {
         });
       }
 
+      // Filter by vehicle plate number if provided in URL params
+      let vehicleFilteredRecords = filteredRecords;
+      if (vehiclePlateNumberFilter) {
+        vehicleFilteredRecords = filteredRecords.filter((record) =>
+          record.vehiclePlateNumber?.toLowerCase() === vehiclePlateNumberFilter.toLowerCase()
+        );
+      }
+
       // Map to vehicle entry/exit data
-      const result = filteredRecords.map((record) => ({
+      const result = vehicleFilteredRecords.map((record) => ({
         plateNumber: record.vehiclePlateNumber || "-",
         entryPlateNumber: record.metadata?.entryPlateNumber || record.vehiclePlateNumber || "-",
         operatorName: record.vehicle?.operator?.name || "-",
@@ -227,6 +246,17 @@ export default function BaoCaoXeRaVaoBen() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0">
           <div className="flex gap-2">
+            {returnTo && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => navigate(returnTo)}
+                className="gap-2"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Quay lại
+              </Button>
+            )}
             <Button
               variant="outline"
               size="sm"
