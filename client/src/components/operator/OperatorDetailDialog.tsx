@@ -398,13 +398,13 @@ export function OperatorDetailDialog({
                                 {formatCurrency(invoice.totalAmount)}
                               </TableCell>
                               <TableCell className="text-center">
-                                <StatusBadge
-                                  status={
-                                    invoice.paymentStatus === "overdue"
-                                      ? "inactive"
-                                      : "pending"
-                                  }
-                                />
+                                {invoice.paymentStatus === "overdue" ? (
+                                  <StatusBadge status="inactive" />
+                                ) : (
+                                  <span className="px-2 py-1 rounded-full text-xs bg-yellow-100 text-yellow-800">
+                                    Chưa thanh toán
+                                  </span>
+                                )}
                               </TableCell>
                             </TableRow>
                           ))}

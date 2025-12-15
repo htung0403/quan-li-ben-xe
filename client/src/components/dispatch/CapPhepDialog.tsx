@@ -35,7 +35,7 @@ import type {
   Driver,
   ServiceCharge,
 } from "@/types";
-import { format } from "date-fns";
+import { format, startOfMonth, endOfMonth } from "date-fns";
 
 interface CapPhepDialogProps {
   record: DispatchRecord;
@@ -94,6 +94,7 @@ export function CapPhepDialog({
   const [serviceDetailsExpanded, setServiceDetailsExpanded] = useState(true);
   const [isAnimating, setIsAnimating] = useState(false);
   const [showZeroAmountConfirm, setShowZeroAmountConfirm] = useState(false);
+  const [dailyTripCounts, setDailyTripCounts] = useState<Record<number, number>>({});
 
   useEffect(() => {
     if (open) {
@@ -120,6 +121,13 @@ export function CapPhepDialog({
   useEffect(() => {
     calculateTotal();
   }, [serviceCharges]);
+
+  // Load daily trip counts for the month
+  useEffect(() => {
+    if (departureDate && record.vehicleId) {
+      loadDailyTripCounts();
+    }
+  }, [departureDate, record.vehicleId]);
 
   // Tự động điền seatCount và bedCount từ dữ liệu xe khi selectedVehicle thay đổi
   useEffect(() => {
@@ -211,6 +219,48 @@ export function CapPhepDialog({
       0
     );
     setTotalAmount(total);
+  };
+
+  const loadDailyTripCounts = async () => {
+    try {
+      if (!departureDate || !record.vehicleId) {
+        setDailyTripCounts({});
+        return;
+      }
+
+      // Get start and end of the month from departureDate
+      const monthDate = new Date(departureDate);
+      const monthStart = startOfMonth(monthDate);
+      const monthEnd = endOfMonth(monthDate);
+
+      // Load dispatch records for this vehicle
+      const dispatchRecords = await dispatchService.getAll(
+        undefined,
+        record.vehicleId
+      );
+
+      // Filter records by month and count by day
+      const counts: Record<number, number> = {};
+
+      dispatchRecords.forEach((dispatchRecord) => {
+        // Use plannedDepartureTime if available, otherwise use entryTime
+        const recordDate = dispatchRecord.plannedDepartureTime
+          ? new Date(dispatchRecord.plannedDepartureTime)
+          : dispatchRecord.entryTime
+          ? new Date(dispatchRecord.entryTime)
+          : null;
+
+        if (recordDate && recordDate >= monthStart && recordDate <= monthEnd) {
+          const day = recordDate.getDate();
+          counts[day] = (counts[day] || 0) + 1;
+        }
+      });
+
+      setDailyTripCounts(counts);
+    } catch (error) {
+      console.error("Failed to load daily trip counts:", error);
+      setDailyTripCounts({});
+    }
   };
 
   const submitPermit = async () => {
@@ -612,7 +662,9 @@ export function CapPhepDialog({
                         className="flex items-center gap-1 text-sm"
                       >
                         <span className="font-medium">{day}</span>
-                        <span className="text-blue-600">(0)</span>
+                        <span className="text-blue-600">
+                          ({dailyTripCounts[day] || 0})
+                        </span>
                       </div>
                     ))}
                   </div>
