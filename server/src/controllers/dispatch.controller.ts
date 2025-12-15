@@ -19,6 +19,7 @@ const dispatchSchema = z.object({
     { message: 'Invalid entry time format' }
   ),
   notes: z.string().optional(),
+  entryShiftId: z.string().uuid().optional(),
 })
 
 export const getAllDispatchRecords = async (req: Request, res: Response) => {
@@ -293,8 +294,7 @@ export const getDispatchRecordById = async (req: Request, res: Response) => {
 
 export const createDispatchRecord = async (req: AuthRequest, res: Response) => {
   try {
-    const validated = dispatchSchema.parse(req.body)
-    const { vehicleId, driverId, scheduleId, routeId, entryTime, notes, entryShiftId } = req.body
+    const { vehicleId, driverId, scheduleId, routeId, entryTime, notes, entryShiftId } = dispatchSchema.parse(req.body)
     const userId = req.user?.id
 
     // Frontend sends ISO string with +07:00 (Vietnam time)
