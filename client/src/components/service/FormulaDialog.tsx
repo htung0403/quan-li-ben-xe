@@ -194,14 +194,206 @@ export function FormulaDialog({
 
             <div className="sm:col-span-2">
               <Label htmlFor="formulaExpression">Biểu thức công thức</Label>
-              <textarea
-                id="formulaExpression"
-                {...register("formulaExpression")}
-                disabled={viewMode === "view"}
-                rows={4}
-                className="mt-1 w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none font-mono text-sm"
-                placeholder="Nhập biểu thức công thức..."
-              />
+              <div className="mt-1 space-y-2">
+                {/* Formula Builder */}
+                {viewMode !== "view" && (
+                  <div className="border border-gray-300 rounded-md p-3 bg-gray-50">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-3">
+                      {/* Available Fields */}
+                      <div>
+                        <label className="text-xs font-medium text-gray-600 mb-1 block">Trường dữ liệu</label>
+                        <select 
+                          className="w-full text-xs px-2 py-1 border border-gray-300 rounded"
+                          onChange={(e) => {
+                            if (e.target.value) {
+                              const textarea = document.getElementById('formulaExpression') as HTMLTextAreaElement;
+                              if (textarea) {
+                                const start = textarea.selectionStart;
+                                const end = textarea.selectionEnd;
+                                const text = textarea.value;
+                                const newText = text.substring(0, start) + e.target.value + text.substring(end);
+                                textarea.value = newText;
+                                textarea.focus();
+                                textarea.setSelectionRange(start + e.target.value.length, start + e.target.value.length);
+                                // Trigger change event
+                                const event = new Event('input', { bubbles: true });
+                                textarea.dispatchEvent(event);
+                              }
+                              e.target.value = '';
+                            }
+                          }}
+                        >
+                          <option value="">Chọn trường</option>
+                          <option value="seatCount">seatCount (Số ghế)</option>
+                          <option value="bedCount">bedCount (Số giường)</option>
+                          <option value="distance">distance (Khoảng cách)</option>
+                          <option value="basePrice">basePrice (Giá cơ bản)</option>
+                          <option value="fuelPrice">fuelPrice (Giá xăng)</option>
+                          <option value="routeType">routeType (Loại tuyến)</option>
+                          <option value="vehicleType">vehicleType (Loại xe)</option>
+                          <option value="dayOfWeek">dayOfWeek (Thứ trong tuần)</option>
+                          <option value="isHoliday">isHoliday (Ngày lễ)</option>
+                        </select>
+                      </div>
+
+                      {/* Operators */}
+                      <div>
+                        <label className="text-xs font-medium text-gray-600 mb-1 block">Phép tính</label>
+                        <select 
+                          className="w-full text-xs px-2 py-1 border border-gray-300 rounded"
+                          onChange={(e) => {
+                            if (e.target.value) {
+                              const textarea = document.getElementById('formulaExpression') as HTMLTextAreaElement;
+                              if (textarea) {
+                                const start = textarea.selectionStart;
+                                const end = textarea.selectionEnd;
+                                const text = textarea.value;
+                                const newText = text.substring(0, start) + ' ' + e.target.value + ' ' + text.substring(end);
+                                textarea.value = newText;
+                                textarea.focus();
+                                textarea.setSelectionRange(start + e.target.value.length + 2, start + e.target.value.length + 2);
+                                // Trigger change event
+                                const event = new Event('input', { bubbles: true });
+                                textarea.dispatchEvent(event);
+                              }
+                              e.target.value = '';
+                            }
+                          }}
+                        >
+                          <option value="">Chọn phép tính</option>
+                          <option value="+">+ (Cộng)</option>
+                          <option value="-">- (Trừ)</option>
+                          <option value="*">* (Nhân)</option>
+                          <option value="/"># (Chia)</option>
+                          <option value="%">% (Chia lấy dư)</option>
+                          <option value="**">** (Lũy thừa)</option>
+                        </select>
+                      </div>
+
+                      {/* Functions */}
+                      <div>
+                        <label className="text-xs font-medium text-gray-600 mb-1 block">Hàm</label>
+                        <select 
+                          className="w-full text-xs px-2 py-1 border border-gray-300 rounded"
+                          onChange={(e) => {
+                            if (e.target.value) {
+                              const textarea = document.getElementById('formulaExpression') as HTMLTextAreaElement;
+                              if (textarea) {
+                                const start = textarea.selectionStart;
+                                const end = textarea.selectionEnd;
+                                const text = textarea.value;
+                                const newText = text.substring(0, start) + e.target.value + text.substring(end);
+                                textarea.value = newText;
+                                textarea.focus();
+                                const newPos = start + e.target.value.length - 1; // Position cursor inside parentheses
+                                textarea.setSelectionRange(newPos, newPos);
+                                // Trigger change event
+                                const event = new Event('input', { bubbles: true });
+                                textarea.dispatchEvent(event);
+                              }
+                              e.target.value = '';
+                            }
+                          }}
+                        >
+                          <option value="">Chọn hàm</option>
+                          <option value="Math.max()">Math.max() (Giá trị lớn nhất)</option>
+                          <option value="Math.min()">Math.min() (Giá trị nhỏ nhất)</option>
+                          <option value="Math.round()">Math.round() (Làm tròn)</option>
+                          <option value="Math.ceil()">Math.ceil() (Làm tròn lên)</option>
+                          <option value="Math.floor()">Math.floor() (Làm tròn xuống)</option>
+                          <option value="Math.abs()">Math.abs() (Giá trị tuyệt đối)</option>
+                          <option value="parseFloat()">parseFloat() (Chuyển số thực)</option>
+                          <option value="parseInt()">parseInt() (Chuyển số nguyên)</option>
+                        </select>
+                      </div>
+
+                      {/* Conditions */}
+                      <div>
+                        <label className="text-xs font-medium text-gray-600 mb-1 block">Điều kiện</label>
+                        <select 
+                          className="w-full text-xs px-2 py-1 border border-gray-300 rounded"
+                          onChange={(e) => {
+                            if (e.target.value) {
+                              const textarea = document.getElementById('formulaExpression') as HTMLTextAreaElement;
+                              if (textarea) {
+                                const start = textarea.selectionStart;
+                                const end = textarea.selectionEnd;
+                                const text = textarea.value;
+                                const newText = text.substring(0, start) + e.target.value + text.substring(end);
+                                textarea.value = newText;
+                                textarea.focus();
+                                // Trigger change event
+                                const event = new Event('input', { bubbles: true });
+                                textarea.dispatchEvent(event);
+                              }
+                              e.target.value = '';
+                            }
+                          }}
+                        >
+                          <option value="">Chọn điều kiện</option>
+                          <option value=" > ">&gt; (Lớn hơn)</option>
+                          <option value=" < ">&lt; (Nhỏ hơn)</option>
+                          <option value=" >= ">&gt;= (Lớn hơn hoặc bằng)</option>
+                          <option value=" <= ">&lt;= (Nhỏ hơn hoặc bằng)</option>
+                          <option value=" == "> == (Bằng)</option>
+                          <option value=" != "> != (Khác)</option>
+                          <option value=" && "> && (Và)</option>
+                          <option value=" || "> || (Hoặc)</option>
+                          <option value="condition ? value1 : value2">condition ? value1 : value2 (If-else)</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Quick Insert Buttons */}
+                    <div className="flex flex-wrap gap-1">
+                      {['(', ')', '[', ']', '{', '}', ',', ';'].map((char) => (
+                        <button
+                          key={char}
+                          type="button"
+                          className="px-2 py-1 text-xs bg-white border border-gray-300 rounded hover:bg-gray-100"
+                          onClick={() => {
+                            const textarea = document.getElementById('formulaExpression') as HTMLTextAreaElement;
+                            if (textarea) {
+                              const start = textarea.selectionStart;
+                              const end = textarea.selectionEnd;
+                              const text = textarea.value;
+                              const newText = text.substring(0, start) + char + text.substring(end);
+                              textarea.value = newText;
+                              textarea.focus();
+                              textarea.setSelectionRange(start + 1, start + 1);
+                              // Trigger change event
+                              const event = new Event('input', { bubbles: true });
+                              textarea.dispatchEvent(event);
+                            }
+                          }}
+                        >
+                          {char}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Formula Expression Textarea */}
+                <textarea
+                  id="formulaExpression"
+                  {...register("formulaExpression")}
+                  disabled={viewMode === "view"}
+                  rows={6}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none font-mono text-sm"
+                  placeholder="Nhập biểu thức công thức hoặc sử dụng các dropdown bên trên để xây dựng..."
+                />
+
+                {/* Formula Examples */}
+                <div className="text-xs text-gray-600 bg-blue-50 p-2 rounded">
+                  <strong>Ví dụ:</strong>
+                  <div className="mt-1 space-y-1">
+                    <div>• Tính số lượng: <code className="bg-white px-1 rounded">seatCount &gt; 30 ? seatCount * 1.2 : seatCount</code></div>
+                    <div>• Tính đơn giá: <code className="bg-white px-1 rounded">basePrice + (distance * 0.5) + (isHoliday ? 50000 : 0)</code></div>
+                    <div>• Sử dụng hàm: <code className="bg-white px-1 rounded">Math.max(basePrice, 100000) * (seatCount / 45)</code></div>
+                  </div>
+                </div>
+              </div>
             </div>
 
             {viewMode !== "view" && (

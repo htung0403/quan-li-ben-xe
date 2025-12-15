@@ -45,6 +45,7 @@ import BaoCaoXeKhongDuDieuKien from "@/pages/BaoCaoXeKhongDuDieuKien"
 import BaoCaoXeRaVaoBen from "@/pages/BaoCaoXeRaVaoBen"
 import BaoCaoXeTangCuong from "@/pages/BaoCaoXeTangCuong"
 import BaoCaoChamCongDangTai from "@/pages/BaoCaoChamCongDangTai"
+import BaoCaoLichSuGiayTo from "@/pages/BaoCaoLichSuGiayTo"
 import LapBaoCao from "@/pages/LapBaoCao"
 import BaoCaoTinhHinhHoatDongMau1 from "@/pages/BaoCaoTinhHinhHoatDongMau1"
 import BaoCaoTinhHinhHoatDongMau3 from "@/pages/BaoCaoTinhHinhHoatDongMau3"
@@ -411,6 +412,16 @@ function App() {
             <ProtectedRoute>
               <MainLayout>
                 <BaoCaoChamCongDangTai />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/bao-cao/lich-su-giay-to"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <BaoCaoLichSuGiayTo />
               </MainLayout>
             </ProtectedRoute>
           }

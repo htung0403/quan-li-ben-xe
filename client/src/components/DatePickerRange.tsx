@@ -15,6 +15,7 @@ import {
 } from 'date-fns'
 import { vi } from 'date-fns/locale'
 import { ChevronDownIcon, CalendarIcon } from 'lucide-react'
+import { iconStyles } from '@/lib/icon-theme'
 import { type DateRange } from 'react-day-picker'
 import { Button } from '@/components/ui/button'
 import { Calendar } from '@/components/ui/calendar'
@@ -157,7 +158,7 @@ export function DatePickerRange({
               disabled={disabled}
             >
               <span className='truncate'>{formatDateRange(range)}</span>
-              <ChevronDownIcon className='h-4 w-4 opacity-50 shrink-0 ml-2' />
+              <ChevronDownIcon className={`${iconStyles.navigationIcon} opacity-50 shrink-0 ml-2`} />
             </Button>
           </PopoverTrigger>
           <PopoverContent className='w-auto overflow-hidden p-0' align='start'>
@@ -179,7 +180,7 @@ export function DatePickerRange({
               disabled={disabled}
               className='shrink-0 whitespace-nowrap'
             >
-              <CalendarIcon className='h-4 w-4 mr-2 shrink-0' />
+              <CalendarIcon className={`${iconStyles.infoIcon} mr-2 shrink-0`} />
               <span>Chọn nhanh</span>
             </Button>
           </PopoverTrigger>

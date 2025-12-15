@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react"
-import { Bus, CheckCircle, DollarSign, AlertTriangle } from "lucide-react"
+import { Bus, CheckCircle, DollarSign, AlertTriangle, History } from "lucide-react"
+import { iconStyles } from "@/lib/icon-theme"
 import { DashboardCard } from "@/components/layout/DashboardCard"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import {
   Table,
   TableBody,
@@ -11,6 +13,9 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { StatusBadge } from "@/components/layout/StatusBadge"
+import { DocumentWarningsTable } from "@/components/dashboard/DocumentWarningsTable"
+import { EditDocumentDialog } from "@/components/dashboard/EditDocumentDialog"
+import { VehicleHistoryTable } from "@/components/dashboard/VehicleHistoryTable"
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
 import { format } from "date-fns"
 import { dashboardService } from "@/services/dashboard.service"
@@ -28,6 +33,9 @@ export default function Dashboard() {
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([])
   const [warnings, setWarnings] = useState<Warning[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [editDocumentOpen, setEditDocumentOpen] = useState(false)
+  const [selectedWarning, setSelectedWarning] = useState<Warning | null>(null)
+  const [vehicleHistoryOpen, setVehicleHistoryOpen] = useState(false)
   const setTitle = useUIStore((state) => state.setTitle)
 
   useEffect(() => {
@@ -65,6 +73,27 @@ export default function Dashboard() {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const handleEditDocument = (warning: Warning) => {
+    setSelectedWarning(warning)
+    setEditDocumentOpen(true)
+  }
+
+const handleViewHistory = (warning: Warning) => {
+  // Pass the warning to filter history for specific vehicle/driver
+  setSelectedWarning(warning)
+  setVehicleHistoryOpen(true)
+}
+
+
+  const handleSaveDocument = async (data: any) => {
+    // This would make an API call to update the document
+    console.log("Saving document:", data)
+    // Simulate API call
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    // Reload warnings after successful update
+    loadDashboardData()
   }
 
   return (
@@ -126,42 +155,12 @@ export default function Dashboard() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Warnings */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-warning" />
-              Cảnh báo giấy tờ sắp hết hạn
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {isLoading ? (
-              <div className="text-center text-gray-500 py-4">Đang tải...</div>
-            ) : warnings.length === 0 ? (
-              <div className="text-center text-gray-500 py-4">Không có cảnh báo</div>
-            ) : (
-              <div className="space-y-3">
-                {warnings.map((warning, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between rounded-lg border border-yellow-200 bg-yellow-50 p-3"
-                  >
-                    <div>
-                      <p className="font-medium text-gray-900">
-                        {warning.type === "vehicle"
-                          ? `Xe: ${warning.plateNumber}`
-                          : `Lái xe: ${warning.name}`}
-                      </p>
-                      <p className="text-sm text-gray-600">
-                        {warning.document} - Hết hạn:{" "}
-                        {format(new Date(warning.expiryDate), "dd/MM/yyyy")}
-                      </p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        <DocumentWarningsTable
+          warnings={warnings}
+          isLoading={isLoading}
+          onEditDocument={handleEditDocument}
+          onViewHistory={handleViewHistory}
+        />
 
         {/* Recent Activity */}
         <Card>
@@ -212,6 +211,31 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Vehicle History Button */}
+      <div className="flex justify-center">
+        <Button
+          onClick={() => setVehicleHistoryOpen(true)}
+          className="gap-2"
+          size="lg"
+        >
+          <History className={iconStyles.historyButton} />
+          Xem lịch sử chỉnh sửa thông số xe
+        </Button>
+      </div>
+
+      {/* Dialogs */}
+      <EditDocumentDialog
+        open={editDocumentOpen}
+        onOpenChange={setEditDocumentOpen}
+        warning={selectedWarning}
+        onSave={handleSaveDocument}
+      />
+
+      <VehicleHistoryTable
+        open={vehicleHistoryOpen}
+        onOpenChange={setVehicleHistoryOpen}
+      />
     </div>
   )
 }

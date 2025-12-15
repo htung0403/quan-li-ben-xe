@@ -514,48 +514,79 @@ export default function BaoCaoDoanhThuBenBanVe() {
                       </TableRow>
                     ))}
                     {/* Total row */}
-                    <TableRow className="bg-gray-50 font-semibold">
-                      <TableCell colSpan={4} className="text-center border-r border-gray-200">
-                        Tổng cộng:
+                    <TableRow className="bg-gradient-to-r from-blue-100 to-blue-50 font-bold text-blue-900 border-t-2 border-blue-300 sticky bottom-0">
+                      <TableCell colSpan={4} className="text-center border-r border-blue-300 bg-blue-200 shadow-sm">
+                        <div className="flex items-center justify-center gap-2">
+                          <span className="text-lg"></span>
+                          <span className="text-base font-bold">TỔNG CỘNG</span>
+                        </div>
                       </TableCell>
-                      <TableCell className="text-center border-r border-gray-200">
-                        {totals.vehicleCount}
+                      <TableCell className="text-center border-r border-blue-300 bg-blue-100 font-bold text-blue-800">
+                        <div className="py-1">
+                          <div className="text-lg font-bold">{totals.vehicleCount}</div>
+                          <div className="text-xs text-blue-600">lượt xe</div>
+                        </div>
                       </TableCell>
-                      <TableCell className="text-center border-r border-gray-200">
-                        {formatCurrency(totals.raVaoBen)}
+                      <TableCell className="text-center border-r border-blue-300 bg-blue-100 font-bold text-blue-800">
+                        <div className="py-1">
+                          <div className="text-sm font-bold">{formatCurrency(totals.raVaoBen)}</div>
+                        </div>
                       </TableCell>
-                      <TableCell className="text-center border-r border-gray-200">
-                        {formatCurrency(totals.hoaHongVe)}
+                      <TableCell className="text-center border-r border-blue-300 bg-blue-100 font-bold text-blue-800">
+                        <div className="py-1">
+                          <div className="text-sm font-bold">{formatCurrency(totals.hoaHongVe)}</div>
+                        </div>
                       </TableCell>
-                      <TableCell className="text-center border-r border-gray-200">
-                        {formatCurrency(totals.dauDem)}
+                      <TableCell className="text-center border-r border-blue-300 bg-blue-100 font-bold text-blue-800">
+                        <div className="py-1">
+                          <div className="text-sm font-bold">{formatCurrency(totals.dauDem)}</div>
+                        </div>
                       </TableCell>
-                      <TableCell className="text-center border-r border-gray-200">
-                        {formatCurrency(totals.veSinhTaxi)}
+                      <TableCell className="text-center border-r border-blue-300 bg-blue-100 font-bold text-blue-800">
+                        <div className="py-1">
+                          <div className="text-sm font-bold">{formatCurrency(totals.veSinhTaxi)}</div>
+                        </div>
                       </TableCell>
-                      <TableCell className="text-center border-r border-gray-200">
-                        {formatCurrency(totals.luuBen)}
+                      <TableCell className="text-center border-r border-blue-300 bg-blue-100 font-bold text-blue-800">
+                        <div className="py-1">
+                          <div className="text-sm font-bold">{formatCurrency(totals.luuBen)}</div>
+                        </div>
                       </TableCell>
-                      <TableCell className="text-center border-r border-gray-200">
-                        {formatCurrency(totals.veSinhXeHD)}
+                      <TableCell className="text-center border-r border-blue-300 bg-blue-100 font-bold text-blue-800">
+                        <div className="py-1">
+                          <div className="text-sm font-bold">{formatCurrency(totals.veSinhXeHD)}</div>
+                        </div>
                       </TableCell>
-                      <TableCell className="text-center border-r border-gray-200">
-                        {formatCurrency(totals.truyThuChuyen)}
+                      <TableCell className="text-center border-r border-blue-300 bg-blue-100 font-bold text-blue-800">
+                        <div className="py-1">
+                          <div className="text-sm font-bold">{formatCurrency(totals.truyThuChuyen)}</div>
+                        </div>
                       </TableCell>
-                      <TableCell className="text-center border-r border-gray-200">
-                        {formatCurrency(totals.truyThuThang)}
+                      <TableCell className="text-center border-r border-blue-300 bg-blue-100 font-bold text-blue-800">
+                        <div className="py-1">
+                          <div className="text-sm font-bold">{formatCurrency(totals.truyThuThang)}</div>
+                        </div>
                       </TableCell>
-                      <TableCell className="text-center border-r border-gray-200">
-                        {formatCurrency(totals.hhTruyThuThang)}
+                      <TableCell className="text-center border-r border-blue-300 bg-blue-100 font-bold text-blue-800">
+                        <div className="py-1">
+                          <div className="text-sm font-bold">{formatCurrency(totals.hhTruyThuThang)}</div>
+                        </div>
                       </TableCell>
-                      <TableCell className="text-center border-r border-gray-200">
-                        {formatCurrency(totals.noCu)}
+                      <TableCell className="text-center border-r border-blue-300 bg-blue-100 font-bold text-blue-800">
+                        <div className="py-1">
+                          <div className="text-sm font-bold">{formatCurrency(totals.noCu)}</div>
+                        </div>
                       </TableCell>
-                      <TableCell className="text-center border-r border-gray-200">
-                        {formatCurrency(totals.phuThu)}
+                      <TableCell className="text-center border-r border-blue-300 bg-blue-100 font-bold text-blue-800">
+                        <div className="py-1">
+                          <div className="text-sm font-bold">{formatCurrency(totals.phuThu)}</div>
+                        </div>
                       </TableCell>
-                      <TableCell className="text-center">
-                        {formatCurrency(totals.doanhThu)}
+                      <TableCell className="text-center bg-gradient-to-r from-green-200 to-green-100 border-2 border-green-400 shadow-lg">
+                        <div className="py-2 px-1">
+                          <div className="text-lg font-bold text-green-800">{formatCurrency(totals.doanhThu)}</div>
+                          <div className="text-xs text-green-600 font-medium">VNĐ</div>
+                        </div>
                       </TableCell>
                     </TableRow>
                   </>

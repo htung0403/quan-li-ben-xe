@@ -9,6 +9,15 @@ import { Select } from "@/components/ui/select";
 import { serviceChargeService } from "@/services/service-charge.service";
 import type { ServiceType } from "@/types";
 
+// Utility functions for number formatting
+const formatCurrency = (value: number): string => {
+  return value.toLocaleString("vi-VN");
+};
+
+const parseCurrency = (value: string): number => {
+  return parseInt(value.replace(/[^\d]/g, "")) || 0;
+};
+
 interface ThemDichVuDialogProps {
   dispatchRecordId: string;
   open: boolean;
@@ -26,6 +35,7 @@ export function ThemDichVuDialog({
   const [selectedServiceTypeId, setSelectedServiceTypeId] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [unitPrice, setUnitPrice] = useState(0);
+  const [unitPriceDisplay, setUnitPriceDisplay] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
@@ -33,6 +43,7 @@ export function ThemDichVuDialog({
       loadServiceTypes();
       setQuantity(1);
       setUnitPrice(0);
+      setUnitPriceDisplay("");
       setSelectedServiceTypeId("");
     }
   }, [open]);
@@ -52,7 +63,15 @@ export function ThemDichVuDialog({
     const type = serviceTypes.find((t) => t.id === typeId);
     if (type) {
       setUnitPrice(type.basePrice);
+      setUnitPriceDisplay(formatCurrency(type.basePrice));
     }
+  };
+
+  const handleUnitPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const inputValue = e.target.value;
+    const numericValue = parseCurrency(inputValue);
+    setUnitPrice(numericValue);
+    setUnitPriceDisplay(formatCurrency(numericValue));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -132,10 +151,10 @@ export function ThemDichVuDialog({
             <Label htmlFor="unitPrice">Đơn giá (VNĐ)</Label>
             <Input
               id="unitPrice"
-              type="number"
-              min="0"
-              value={unitPrice}
-              onChange={(e) => setUnitPrice(parseInt(e.target.value) || 0)}
+              type="text"
+              value={unitPriceDisplay}
+              onChange={handleUnitPriceChange}
+              placeholder="0"
               className="mt-1"
               required
             />
@@ -144,7 +163,7 @@ export function ThemDichVuDialog({
           <div className="pt-2 border-t flex justify-between items-center">
             <span className="font-semibold">Thành tiền:</span>
             <span className="font-bold text-lg text-blue-600">
-              {(quantity * unitPrice).toLocaleString("vi-VN")} VNĐ
+              {formatCurrency(quantity * unitPrice)} VNĐ
             </span>
           </div>
 

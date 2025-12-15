@@ -1,14 +1,15 @@
 import { useEffect, useMemo, useState } from "react";
-import { RefreshCw, Search, FileSpreadsheet } from "lucide-react";
+import { RefreshCw, Search, Download, Filter, Calendar, BarChart3 } from "lucide-react";
 import { toast } from "react-toastify";
 import { format, startOfMonth, endOfMonth, getDaysInMonth } from "date-fns";
 import { vi } from "date-fns/locale";
 import * as XLSX from "xlsx";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { dispatchService } from "@/services/dispatch.service";
 import { routeService } from "@/services/route.service";
 import { operatorService } from "@/services/operator.service";
@@ -274,9 +275,14 @@ export default function BaoCaoChamCongDangTai() {
 
   return (
     <div className="space-y-4">
+      {/* Filters */}
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0">
-          <div className="flex gap-2">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
+          <CardTitle className="flex items-center gap-2">
+            <Filter className="h-5 w-5" />
+            Bộ lọc và tìm kiếm
+          </CardTitle>
+          <div className="flex items-center gap-2">
             <Button
               variant="outline"
               size="sm"
@@ -284,7 +290,7 @@ export default function BaoCaoChamCongDangTai() {
               disabled={isLoading || filteredData.length === 0}
               className="gap-2"
             >
-              <FileSpreadsheet className="h-4 w-4" />
+              <Download className="h-4 w-4" />
               Xuất Excel
             </Button>
             <Button
@@ -294,15 +300,18 @@ export default function BaoCaoChamCongDangTai() {
               disabled={isLoading}
               className="gap-2"
             >
-              <RefreshCw className="h-4 w-4" />
+              <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
               Làm mới
             </Button>
           </div>
         </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="month-picker">Tháng (*)</Label>
+              <Label htmlFor="month-picker" className="flex items-center gap-2">
+                <Calendar className="h-4 w-4" />
+                Tháng báo cáo <span className="text-red-500">*</span>
+              </Label>
               <Popover open={monthPickerOpen} onOpenChange={setMonthPickerOpen}>
                 <PopoverTrigger asChild>
                   <Button
@@ -325,26 +334,28 @@ export default function BaoCaoChamCongDangTai() {
                 </PopoverContent>
               </Popover>
             </div>
+            
             <div className="space-y-2">
-              <Label className="opacity-0">Search</Label>
+              <Label>Tìm kiếm</Label>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
                 <Input
-                  placeholder="Tìm kiếm biển số, đơn vị, tuyến..."
+                  placeholder="Biển số, đơn vị, tuyến..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="pl-9"
                 />
               </div>
             </div>
+            
             <div className="space-y-2">
-              <Label htmlFor="routeType" className="opacity-0">Loại tuyến</Label>
+              <Label htmlFor="routeType">Loại tuyến</Label>
               <Select
                 id="routeType"
                 value={selectedRouteType}
                 onChange={(e) => setSelectedRouteType(e.target.value)}
               >
-                <option value="">Loại tuyến</option>
+                <option value="">Tất cả loại tuyến</option>
                 {routeTypes.map((type) => (
                   <option key={type} value={type}>
                     {type}
@@ -352,14 +363,15 @@ export default function BaoCaoChamCongDangTai() {
                 ))}
               </Select>
             </div>
+            
             <div className="space-y-2">
-              <Label htmlFor="operator" className="opacity-0">Tên doanh nghiệp</Label>
+              <Label htmlFor="operator">Doanh nghiệp</Label>
               <Select
                 id="operator"
                 value={selectedOperatorId}
                 onChange={(e) => setSelectedOperatorId(e.target.value)}
               >
-                <option value="">Tên doanh nghiệp</option>
+                <option value="">Tất cả doanh nghiệp</option>
                 {operators.map((op) => (
                   <option key={op.id} value={op.id}>
                     {op.name}
@@ -367,14 +379,15 @@ export default function BaoCaoChamCongDangTai() {
                 ))}
               </Select>
             </div>
+            
             <div className="space-y-2">
-              <Label htmlFor="route" className="opacity-0">Tuyến vận chuyển</Label>
+              <Label htmlFor="route">Tuyến vận chuyển</Label>
               <Select
                 id="route"
                 value={selectedRouteId}
                 onChange={(e) => setSelectedRouteId(e.target.value)}
               >
-                <option value="">Tuyến vận chuyển</option>
+                <option value="">Tất cả tuyến</option>
                 {routes.map((route) => (
                   <option key={route.id} value={route.id}>
                     {route.routeName}
@@ -384,7 +397,113 @@ export default function BaoCaoChamCongDangTai() {
             </div>
           </div>
 
-          <div className="border rounded-lg overflow-hidden">
+          {/* Active Filters */}
+          {(searchQuery || selectedRouteType || selectedOperatorId || selectedRouteId) && (
+            <div className="flex flex-wrap gap-2">
+              <span className="text-sm text-gray-600">Bộ lọc đang áp dụng:</span>
+              {searchQuery && (
+                <Badge variant="secondary" className="gap-1">
+                  Tìm kiếm: {searchQuery}
+                  <button
+                    onClick={() => setSearchQuery("")}
+                    className="ml-1 hover:bg-gray-300 rounded-full p-0.5"
+                  >
+                    ×
+                  </button>
+                </Badge>
+              )}
+              {selectedRouteType && (
+                <Badge variant="secondary" className="gap-1">
+                  Loại tuyến: {selectedRouteType}
+                  <button
+                    onClick={() => setSelectedRouteType("")}
+                    className="ml-1 hover:bg-gray-300 rounded-full p-0.5"
+                  >
+                    ×
+                  </button>
+                </Badge>
+              )}
+              {selectedOperatorId && (
+                <Badge variant="secondary" className="gap-1">
+                  Doanh nghiệp: {operators.find(op => op.id === selectedOperatorId)?.name}
+                  <button
+                    onClick={() => setSelectedOperatorId("")}
+                    className="ml-1 hover:bg-gray-300 rounded-full p-0.5"
+                  >
+                    ×
+                  </button>
+                </Badge>
+              )}
+              {selectedRouteId && (
+                <Badge variant="secondary" className="gap-1">
+                  Tuyến: {routes.find(r => r.id === selectedRouteId)?.routeName}
+                  <button
+                    onClick={() => setSelectedRouteId("")}
+                    className="ml-1 hover:bg-gray-300 rounded-full p-0.5"
+                  >
+                    ×
+                  </button>
+                </Badge>
+              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setSearchQuery("");
+                  setSelectedRouteType("");
+                  setSelectedOperatorId("");
+                  setSelectedRouteId("");
+                }}
+                className="h-6 px-2 text-xs"
+              >
+                Xóa tất cả
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Data Table */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
+              <BarChart3 className="h-5 w-5" />
+              Bảng chấm công chi tiết
+            </CardTitle>
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <span>Hiển thị {filteredData.length} xe</span>
+              {filteredData.length !== data.length && (
+                <span>/ {data.length} tổng</span>
+              )}
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent className="p-0">
+          {/* Legend */}
+          <div className="px-6 py-3 bg-gray-50 border-b">
+            <div className="flex flex-wrap items-center gap-6 text-sm">
+              <span className="font-medium text-gray-700">Chú thích số chuyến:</span>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 bg-green-600 rounded"></div>
+                <span className="text-green-700">≥ 3 chuyến (Cao)</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 bg-green-100 border border-green-300 rounded"></div>
+                <span className="text-green-700">2 chuyến (Trung bình)</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 bg-blue-100 border border-blue-300 rounded"></div>
+                <span className="text-blue-700">1 chuyến (Thấp)</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="w-4 h-4 bg-gray-50 border border-gray-300 rounded"></div>
+                <span className="text-gray-600">0 chuyến (Không hoạt động)</span>
+              </div>
+            </div>
+          </div>
+          
+          <div className="overflow-hidden">
             <StickyTable className="min-w-full" style={{ tableLayout: "fixed" }}>
                 <colgroup>
                   <col className="w-[60px]" />
@@ -495,67 +614,113 @@ export default function BaoCaoChamCongDangTai() {
                     </StickyTableRow>
                   ) : (
                     <>
-                      {filteredData.map((item, index) => (
-                        <StickyTableRow key={`${item.plateNumber}-${item.routeName}-${index}`}>
-                          <StickyTableCell 
-                            className="text-center border-r border-gray-200 py-2"
-                            sticky
-                            stickyLeft={0}
-                            style={{ 
-                              width: "60px", 
-                              minWidth: "60px", 
-                              maxWidth: "60px"
-                            }}
+                      {filteredData.map((item, index) => {
+                        const completionRate = item.registeredTrips > 0 
+                          ? (item.totalActual / item.registeredTrips) * 100 
+                          : 0;
+                        const isLowPerformance = completionRate < 80;
+                        const isHighPerformance = completionRate >= 100;
+                        
+                        return (
+                          <StickyTableRow 
+                            key={`${item.plateNumber}-${item.routeName}-${index}`}
+                            className={`hover:bg-gray-50 ${
+                              isLowPerformance ? 'bg-red-50' : 
+                              isHighPerformance ? 'bg-green-50' : ''
+                            }`}
                           >
-                            {index + 1}
-                          </StickyTableCell>
-                          <StickyTableCell 
-                            className="text-center border-r border-gray-200 font-semibold py-2"
-                            sticky
-                            stickyLeft={60}
-                            style={{ 
-                              width: "150px", 
-                              minWidth: "150px", 
-                              maxWidth: "150px"
-                            }}
-                          >
-                            {item.plateNumber}
-                          </StickyTableCell>
-                          {monthDays.map((day) => (
-                            <StickyTableCell
-                              key={day}
+                            <StickyTableCell 
                               className="text-center border-r border-gray-200 py-2"
-                              style={{ width: "50px", minWidth: "50px" }}
+                              sticky
+                              stickyLeft={0}
+                              style={{ 
+                                width: "60px", 
+                                minWidth: "60px", 
+                                maxWidth: "60px"
+                              }}
                             >
-                              {item.dailyTrips[day] || "-"}
+                              {index + 1}
                             </StickyTableCell>
-                          ))}
-                          <StickyTableCell 
-                            className="text-center border-r border-gray-200 py-2"
-                            sticky
-                            stickyRight={120}
-                            style={{ 
-                              width: "150px", 
-                              minWidth: "150px", 
-                              maxWidth: "150px"
-                            }}
-                          >
-                            {item.registeredTrips}
-                          </StickyTableCell>
-                          <StickyTableCell 
-                            className="text-center py-2"
-                            sticky
-                            stickyRight={0}
-                            style={{ 
-                              width: "120px", 
-                              minWidth: "120px", 
-                              maxWidth: "120px"
-                            }}
-                          >
-                            {item.totalActual}
-                          </StickyTableCell>
-                        </StickyTableRow>
-                      ))}
+                            <StickyTableCell 
+                              className="border-r border-gray-200 py-2 px-3"
+                              sticky
+                              stickyLeft={60}
+                              style={{ 
+                                width: "150px", 
+                                minWidth: "150px", 
+                                maxWidth: "150px"
+                              }}
+                            >
+                              <div className="space-y-1">
+                                <div className="font-semibold text-center">{item.plateNumber}</div>
+                                <div className="text-xs text-gray-600 text-center truncate" title={item.operatorName}>
+                                  {item.operatorName}
+                                </div>
+                                <div className="text-xs text-blue-600 text-center truncate" title={item.routeName}>
+                                  {item.routeName}
+                                </div>
+                              </div>
+                            </StickyTableCell>
+                            {monthDays.map((day) => {
+                              const tripCount = item.dailyTrips[day] || 0;
+                              let cellClass = "text-center border-r border-gray-200 py-2 transition-colors";
+                              
+                              if (tripCount === 0) {
+                                cellClass += " text-gray-400 bg-gray-50";
+                              } else if (tripCount >= 3) {
+                                cellClass += " font-bold text-white bg-green-600 hover:bg-green-700";
+                              } else if (tripCount >= 2) {
+                                cellClass += " font-semibold text-green-800 bg-green-100 hover:bg-green-200";
+                              } else {
+                                cellClass += " font-medium text-blue-800 bg-blue-100 hover:bg-blue-200";
+                              }
+                              
+                              return (
+                                <StickyTableCell
+                                  key={day}
+                                  className={cellClass}
+                                  style={{ width: "50px", minWidth: "50px" }}
+                                  title={tripCount > 0 ? `${tripCount} chuyến ngày ${day}` : `Không có chuyến ngày ${day}`}
+                                >
+                                  {tripCount > 0 ? tripCount : "-"}
+                                </StickyTableCell>
+                              );
+                            })}
+                            <StickyTableCell 
+                              className="text-center border-r border-gray-200 py-2 font-medium"
+                              sticky
+                              stickyRight={120}
+                              style={{ 
+                                width: "150px", 
+                                minWidth: "150px", 
+                                maxWidth: "150px"
+                              }}
+                            >
+                              {item.registeredTrips.toLocaleString()}
+                            </StickyTableCell>
+                            <StickyTableCell 
+                              className={`text-center py-2 font-medium ${
+                                isLowPerformance ? 'text-red-600' :
+                                isHighPerformance ? 'text-green-600' : 'text-gray-900'
+                              }`}
+                              sticky
+                              stickyRight={0}
+                              style={{ 
+                                width: "120px", 
+                                minWidth: "120px", 
+                                maxWidth: "120px"
+                              }}
+                            >
+                              <div className="space-y-1">
+                                <div>{item.totalActual.toLocaleString()}</div>
+                                <div className="text-xs">
+                                  ({Math.round(completionRate)}%)
+                                </div>
+                              </div>
+                            </StickyTableCell>
+                          </StickyTableRow>
+                        );
+                      })}
                       {/* Total row */}
                       <StickyTableRow className="bg-gray-50 font-semibold border-b">
                         <StickyTableCell 

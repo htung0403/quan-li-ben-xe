@@ -462,6 +462,8 @@ export function CapPhepDialog({
       serviceChargeService.getAll(record.id).then((charges) => {
         setServiceCharges(charges);
       });
+      // Reload daily trip counts to reflect the new service
+      loadDailyTripCounts();
     }
   };
 

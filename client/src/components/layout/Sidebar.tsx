@@ -79,6 +79,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     { name: "Doanh thu bến bán vé", href: "/bao-cao/doanh-thu-ben-ban-ve", icon: DollarSign, flip: false },
     { name: "Cấp phép ra bến", href: "/bao-cao/cap-phep-ra-ben", icon: ShieldCheck, flip: false },
     { name: "Chấm công đăng tài", href: "/bao-cao/cham-cong-dang-tai", icon: CalendarClock, flip: false },
+    { name: "Lịch sử giấy tờ", href: "/bao-cao/lich-su-giay-to", icon: FileText, flip: false },
   ];
 
   const quanLySubmenu = [
