@@ -16,6 +16,8 @@ import { driverService } from "@/services/driver.service"
 import { CapPhepDialog } from "./CapPhepDialog"
 import type { Route, Schedule, Driver, DispatchInput, DispatchRecord } from "@/types"
 import { cn } from "@/lib/utils"
+import { useUIStore } from "@/store/ui.store"
+import type { Shift } from "@/services/shift.service"
 
 interface ChoXeVaoBenDialogProps {
   vehicleOptions: Array<{ id: string; plateNumber: string }>
@@ -53,6 +55,29 @@ export function ChoXeVaoBenDialog({
   const [isAnimating, setIsAnimating] = useState(false)
   const [showPermitDialog, setShowPermitDialog] = useState(false)
   const [permitDispatchRecord, setPermitDispatchRecord] = useState<DispatchRecord | null>(null)
+  const { currentShift } = useUIStore()
+
+  // Helper function to get shift ID from currentShift string
+  const getShiftIdFromCurrentShift = (): string | undefined => {
+    if (!currentShift || currentShift === '<Trống>') {
+      return undefined
+    }
+
+    const currentShifts = useUIStore.getState().shifts
+    if (currentShifts.length === 0) {
+      return undefined
+    }
+
+    // Parse shift name from currentShift string (format: "Ca 1 (06:00 - 14:00)")
+    const match = currentShift.match(/^(.+?)\s*\(/)
+    if (!match) {
+      return undefined
+    }
+
+    const shiftName = match[1].trim()
+    const foundShift = currentShifts.find((shift: Shift) => shift.name === shiftName)
+    return foundShift?.id
+  }
 
   useEffect(() => {
     if (open) {
@@ -68,6 +93,11 @@ export function ChoXeVaoBenDialog({
 
   useEffect(() => {
     loadRoutes()
+    // Load shifts if not already loaded
+    const { shifts: currentShifts, loadShifts } = useUIStore.getState()
+    if (currentShifts.length === 0) {
+      loadShifts()
+    }
   }, [])
 
   useEffect(() => {
@@ -216,12 +246,15 @@ export function ChoXeVaoBenDialog({
 
     setIsLoading(true)
     try {
+      const entryShiftId = getShiftIdFromCurrentShift()
+
       const dispatchData: DispatchInput = {
         vehicleId,
         driverId: selectedDriver.id,
         routeId: routeId || undefined,
         scheduleId: confirmPassengerDrop ? (scheduleId || undefined) : undefined,
         entryTime: entryTimeISO,
+        entryShiftId,
       }
 
       const result = await dispatchService.create(dispatchData)

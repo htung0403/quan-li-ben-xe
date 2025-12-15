@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { toast } from "react-toastify";
 import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,8 @@ import { DateTimePicker } from "@/components/DatePicker";
 import { dispatchService } from "@/services/dispatch.service";
 import type { DispatchRecord } from "@/types";
 import { formatVietnamDateTime } from "@/lib/vietnam-time";
+import { useUIStore } from "@/store/ui.store";
+import type { Shift } from "@/services/shift.service";
 import {
   Table,
   TableBody,
@@ -34,6 +36,36 @@ export function ChoNhieuXeRaBenDialog({
   const [passengerCount, setPassengerCount] = useState(0);
   const [selectedRecords, setSelectedRecords] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(false);
+  const { currentShift } = useUIStore();
+
+  // Helper function to get shift ID from currentShift string
+  const getShiftIdFromCurrentShift = (): string | undefined => {
+    if (!currentShift || currentShift === '<Trống>') {
+      return undefined;
+    }
+
+    const currentShifts = useUIStore.getState().shifts;
+    if (currentShifts.length === 0) {
+      return undefined;
+    }
+
+    const match = currentShift.match(/^(.+?)\s*\(/);
+    if (!match) {
+      return undefined;
+    }
+
+    const shiftName = match[1].trim();
+    const foundShift = currentShifts.find((shift: Shift) => shift.name === shiftName);
+    return foundShift?.id;
+  };
+
+  useEffect(() => {
+    // Load shifts if not already loaded
+    const { shifts: currentShifts, loadShifts } = useUIStore.getState();
+    if (currentShifts.length === 0) {
+      loadShifts();
+    }
+  }, []);
   
   // Filter states for each column
   const [filters, setFilters] = useState({
@@ -100,11 +132,13 @@ export function ChoNhieuXeRaBenDialog({
 
     setIsLoading(true);
     try {
+      const exitShiftId = getShiftIdFromCurrentShift();
       const promises = Array.from(selectedRecords).map((recordId) =>
         dispatchService.recordExit(
           recordId,
           exitTime.toISOString(),
-          passengerCount
+          passengerCount,
+          exitShiftId
         )
       );
 

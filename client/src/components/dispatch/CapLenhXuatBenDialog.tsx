@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { toast } from "react-toastify"
 import {
   Search
@@ -10,6 +10,8 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { dispatchService } from "@/services/dispatch.service"
 import type { DispatchRecord } from "@/types"
 import { formatVietnamDateTime } from "@/lib/vietnam-time"
+import { useUIStore } from "@/store/ui.store"
+import type { Shift } from "@/services/shift.service"
 
 interface CapLenhXuatBenDialogProps {
   record: DispatchRecord
@@ -26,6 +28,36 @@ export function CapLenhXuatBenDialog({
   const [isLoading, setIsLoading] = useState(false)
   const [signAndTransmit, setSignAndTransmit] = useState(true)
   const [printRepresentation, setPrintRepresentation] = useState(false)
+  const { currentShift } = useUIStore()
+
+  // Helper function to get shift ID from currentShift string
+  const getShiftIdFromCurrentShift = (): string | undefined => {
+    if (!currentShift || currentShift === '<Trống>') {
+      return undefined
+    }
+
+    const currentShifts = useUIStore.getState().shifts
+    if (currentShifts.length === 0) {
+      return undefined
+    }
+
+    const match = currentShift.match(/^(.+?)\s*\(/)
+    if (!match) {
+      return undefined
+    }
+
+    const shiftName = match[1].trim()
+    const foundShift = currentShifts.find((shift: Shift) => shift.name === shiftName)
+    return foundShift?.id
+  }
+
+  useEffect(() => {
+    // Load shifts if not already loaded
+    const { shifts: currentShifts, loadShifts } = useUIStore.getState()
+    if (currentShifts.length === 0) {
+      loadShifts()
+    }
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -37,7 +69,8 @@ export function CapLenhXuatBenDialog({
 
     setIsLoading(true)
     try {
-      await dispatchService.issueDepartureOrder(record.id, parseInt(passengersDeparting))
+      const departureOrderShiftId = getShiftIdFromCurrentShift()
+      await dispatchService.issueDepartureOrder(record.id, parseInt(passengersDeparting), departureOrderShiftId)
       toast.success("Cấp lệnh xuất bến thành công!")
       if (onSuccess) {
         onSuccess()

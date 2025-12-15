@@ -294,7 +294,7 @@ export const getDispatchRecordById = async (req: Request, res: Response) => {
 export const createDispatchRecord = async (req: AuthRequest, res: Response) => {
   try {
     const validated = dispatchSchema.parse(req.body)
-    const { vehicleId, driverId, scheduleId, routeId, entryTime, notes } = validated
+    const { vehicleId, driverId, scheduleId, routeId, entryTime, notes, entryShiftId } = req.body
     const userId = req.user?.id
 
     // Frontend sends ISO string with +07:00 (Vietnam time)
@@ -302,18 +302,25 @@ export const createDispatchRecord = async (req: AuthRequest, res: Response) => {
     // by storing UTC time that represents Vietnam time (UTC+7)
     const entryTimeForDB = convertVietnamISOToUTCForStorage(entryTime)
 
+    const insertData: any = {
+      vehicle_id: vehicleId,
+      driver_id: driverId,
+      schedule_id: scheduleId || null,
+      route_id: routeId || null,
+      entry_time: entryTimeForDB,
+      entry_by: userId || null,
+      current_status: 'entered',
+      notes: notes || null,
+    }
+
+    // Set entry_shift_id if provided
+    if (entryShiftId) {
+      insertData.entry_shift_id = entryShiftId
+    }
+
     const { data, error } = await supabase
       .from('dispatch_records')
-      .insert({
-        vehicle_id: vehicleId,
-        driver_id: driverId,
-        schedule_id: scheduleId || null,
-        route_id: routeId || null,
-        entry_time: entryTimeForDB,
-        entry_by: userId || null,
-        current_status: 'entered',
-        notes: notes || null,
-      })
+      .insert(insertData)
       .select('*')
       .single()
 
@@ -436,7 +443,7 @@ export const recordPassengerDrop = async (req: AuthRequest, res: Response) => {
 export const issuePermit = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params
-    const { transportOrderCode, plannedDepartureTime, seatCount, permitStatus, rejectionReason, routeId, scheduleId, replacementVehicleId } = req.body
+    const { transportOrderCode, plannedDepartureTime, seatCount, permitStatus, rejectionReason, routeId, scheduleId, replacementVehicleId, permitShiftId } = req.body
     const userId = req.user?.id
 
     if (!transportOrderCode && permitStatus !== 'rejected') {
@@ -466,6 +473,11 @@ export const issuePermit = async (req: AuthRequest, res: Response) => {
       boarding_permit_by: userId || null,
       permit_status: permitStatus || 'approved',
       metadata: newMetadata,
+    }
+
+    // Set permit_shift_id if provided
+    if (permitShiftId) {
+      updateData.permit_shift_id = permitShiftId
     }
 
     // Set routeId if provided
@@ -515,7 +527,7 @@ export const issuePermit = async (req: AuthRequest, res: Response) => {
 export const processPayment = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params
-    const { paymentAmount, paymentMethod, invoiceNumber } = req.body
+    const { paymentAmount, paymentMethod, invoiceNumber, paymentShiftId } = req.body
     const userId = req.user?.id
 
     // Allow payment amount >= 0 (including 0 for cases with no services)
@@ -523,16 +535,23 @@ export const processPayment = async (req: AuthRequest, res: Response) => {
       return res.status(400).json({ error: 'Valid payment amount is required (must be >= 0)' })
     }
 
+    const updateData: any = {
+      payment_time: getCurrentVietnamTime(),
+      payment_amount: paymentAmount,
+      payment_method: paymentMethod || 'cash',
+      invoice_number: invoiceNumber || null,
+      payment_by: userId || null,
+      current_status: 'paid',
+    }
+
+    // Set payment_shift_id if provided
+    if (paymentShiftId) {
+      updateData.payment_shift_id = paymentShiftId
+    }
+
     const { data, error } = await supabase
       .from('dispatch_records')
-      .update({
-        payment_time: getCurrentVietnamTime(),
-        payment_amount: paymentAmount,
-        payment_method: paymentMethod || 'cash',
-        invoice_number: invoiceNumber || null,
-        payment_by: userId || null,
-        current_status: 'paid',
-      })
+      .update(updateData)
       .eq('id', id)
       .select('*')
       .single()
@@ -553,17 +572,24 @@ export const processPayment = async (req: AuthRequest, res: Response) => {
 export const issueDepartureOrder = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params
-    const { passengersDeparting } = req.body
+    const { passengersDeparting, departureOrderShiftId } = req.body
     const userId = req.user?.id
+
+    const updateData: any = {
+      departure_order_time: getCurrentVietnamTime(),
+      passengers_departing: passengersDeparting || null,
+      departure_order_by: userId || null,
+      current_status: 'departure_ordered',
+    }
+
+    // Set departure_order_shift_id if provided
+    if (departureOrderShiftId) {
+      updateData.departure_order_shift_id = departureOrderShiftId
+    }
 
     const { data, error } = await supabase
       .from('dispatch_records')
-      .update({
-        departure_order_time: getCurrentVietnamTime(),
-        passengers_departing: passengersDeparting || null,
-        departure_order_by: userId || null,
-        current_status: 'departure_ordered',
-      })
+      .update(updateData)
       .eq('id', id)
       .select('*')
       .single()
@@ -584,7 +610,7 @@ export const issueDepartureOrder = async (req: AuthRequest, res: Response) => {
 export const recordExit = async (req: AuthRequest, res: Response) => {
   try {
     const { id } = req.params
-    const { exitTime, passengersDeparting } = req.body
+    const { exitTime, passengersDeparting, exitShiftId } = req.body
     const userId = req.user?.id
 
     const updateData: any = {
@@ -595,6 +621,11 @@ export const recordExit = async (req: AuthRequest, res: Response) => {
 
     if (passengersDeparting !== undefined) {
       updateData.passengers_departing = passengersDeparting
+    }
+
+    // Set exit_shift_id if provided
+    if (exitShiftId) {
+      updateData.exit_shift_id = exitShiftId
     }
 
     const { data, error } = await supabase

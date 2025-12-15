@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { toast } from "react-toastify"
 import { Calendar } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -8,6 +8,8 @@ import { dispatchService } from "@/services/dispatch.service"
 import { LyDoKhongDuDieuKienDialog } from "./LyDoKhongDuDieuKienDialog"
 import type { DispatchRecord } from "@/types"
 import { format } from "date-fns"
+import { useUIStore } from "@/store/ui.store"
+import type { Shift } from "@/services/shift.service"
 
 interface ThanhToanTheoThangDialogProps {
   record: DispatchRecord
@@ -33,6 +35,36 @@ export function ThanhToanTheoThangDialog({
   )
   const [isLoading, setIsLoading] = useState(false)
   const [notEligibleDialogOpen, setNotEligibleDialogOpen] = useState(false)
+  const { currentShift } = useUIStore()
+
+  // Helper function to get shift ID from currentShift string
+  const getShiftIdFromCurrentShift = (): string | undefined => {
+    if (!currentShift || currentShift === '<Trống>') {
+      return undefined
+    }
+
+    const currentShifts = useUIStore.getState().shifts
+    if (currentShifts.length === 0) {
+      return undefined
+    }
+
+    const match = currentShift.match(/^(.+?)\s*\(/)
+    if (!match) {
+      return undefined
+    }
+
+    const shiftName = match[1].trim()
+    const foundShift = currentShifts.find((shift: Shift) => shift.name === shiftName)
+    return foundShift?.id
+  }
+
+  useEffect(() => {
+    // Load shifts if not already loaded
+    const { shifts: currentShifts, loadShifts } = useUIStore.getState()
+    if (currentShifts.length === 0) {
+      loadShifts()
+    }
+  }, [])
 
   const handleEligible = async () => {
     if (!departureOrderCode) {
@@ -50,18 +82,23 @@ export function ThanhToanTheoThangDialog({
       // Combine date and time for planned departure time
       const plannedDepartureTime = new Date(`${departureDate}T${departureTime}`).toISOString()
 
+      const permitShiftId = getShiftIdFromCurrentShift()
+      const paymentShiftId = getShiftIdFromCurrentShift()
+
       // Issue permit first (this will move the vehicle to permit_issued status)
       await dispatchService.issuePermit(record.id, {
         transportOrderCode: departureOrderCode,
         plannedDepartureTime,
         seatCount: record.seatCount || 0,
-        permitStatus: 'approved'
+        permitStatus: 'approved',
+        permitShiftId,
       })
 
       // Then process payment (for monthly payment, amount is 0 or already paid)
       await dispatchService.processPayment(record.id, {
         paymentAmount: 0, // Monthly payment vehicles already paid
         paymentMethod: 'cash',
+        paymentShiftId,
       })
 
       toast.success("Thanh toán và cấp phép thành công!")
@@ -114,6 +151,8 @@ export function ThanhToanTheoThangDialog({
         .join('; ')
 
       const plannedDepartureTime = new Date(`${departureDate}T${departureTime}`).toISOString()
+      const permitShiftId = getShiftIdFromCurrentShift()
+      const paymentShiftId = getShiftIdFromCurrentShift()
 
       // Issue permit with rejected status
       await dispatchService.issuePermit(record.id, {
@@ -121,13 +160,15 @@ export function ThanhToanTheoThangDialog({
         plannedDepartureTime,
         seatCount: record.seatCount || 0,
         permitStatus: 'rejected',
-        rejectionReason: rejectionReason
+        rejectionReason: rejectionReason,
+        permitShiftId,
       })
 
       // Process payment
       await dispatchService.processPayment(record.id, {
         paymentAmount: 0,
         paymentMethod: 'cash',
+        paymentShiftId,
       })
 
       toast.success("Đã xử lý thanh toán theo tháng!")

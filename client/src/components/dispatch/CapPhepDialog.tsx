@@ -36,6 +36,8 @@ import type {
   ServiceCharge,
 } from "@/types";
 import { format, startOfMonth, endOfMonth } from "date-fns";
+import { useUIStore } from "@/store/ui.store";
+import type { Shift } from "@/services/shift.service";
 
 interface CapPhepDialogProps {
   record: DispatchRecord;
@@ -95,6 +97,7 @@ export function CapPhepDialog({
   const [isAnimating, setIsAnimating] = useState(false);
   const [showZeroAmountConfirm, setShowZeroAmountConfirm] = useState(false);
   const [dailyTripCounts, setDailyTripCounts] = useState<Record<number, number>>({});
+  const { currentShift } = useUIStore();
 
   useEffect(() => {
     if (open) {
@@ -110,6 +113,11 @@ export function CapPhepDialog({
 
   useEffect(() => {
     loadInitialData();
+    // Load shifts if not already loaded
+    const { shifts: currentShifts, loadShifts } = useUIStore.getState();
+    if (currentShifts.length === 0) {
+      loadShifts();
+    }
   }, []);
 
   useEffect(() => {
@@ -221,6 +229,30 @@ export function CapPhepDialog({
     setTotalAmount(total);
   };
 
+  // Helper function to get shift ID from currentShift string
+  const getShiftIdFromCurrentShift = (): string | undefined => {
+    if (!currentShift || currentShift === '<Trống>') {
+      return undefined;
+    }
+
+    // Format: "Ca 1 (06:00 - 14:00)"
+    // Try to find matching shift in shifts array
+    const currentShifts = useUIStore.getState().shifts;
+    if (currentShifts.length === 0) {
+      return undefined;
+    }
+
+    // Parse shift name from currentShift string
+    const match = currentShift.match(/^(.+?)\s*\(/);
+    if (!match) {
+      return undefined;
+    }
+
+    const shiftName = match[1].trim();
+    const foundShift = currentShifts.find((shift: Shift) => shift.name === shiftName);
+    return foundShift?.id;
+  };
+
   const loadDailyTripCounts = async () => {
     try {
       if (!departureDate || !record.vehicleId) {
@@ -271,6 +303,8 @@ export function CapPhepDialog({
           ? new Date(`${departureDate}T${departureTime}`).toISOString()
           : record.plannedDepartureTime || new Date().toISOString();
 
+      const permitShiftId = getShiftIdFromCurrentShift();
+
       await dispatchService.issuePermit(record.id, {
         transportOrderCode,
         plannedDepartureTime,
@@ -279,6 +313,7 @@ export function CapPhepDialog({
         routeId,
         scheduleId,
         replacementVehicleId: replacementVehicleId || undefined,
+        permitShiftId,
       });
 
       toast.success("Cấp phép lên nốt thành công!");
@@ -356,6 +391,8 @@ export function CapPhepDialog({
           : record.plannedDepartureTime || new Date().toISOString();
 
       // Cập nhật trạng thái từ chối cấp phép
+      const permitShiftId = getShiftIdFromCurrentShift();
+
       await dispatchService.issuePermit(record.id, {
         transportOrderCode: transportOrderCode || undefined,
         plannedDepartureTime,
@@ -365,6 +402,7 @@ export function CapPhepDialog({
         routeId: routeId || undefined,
         scheduleId: scheduleId || undefined,
         replacementVehicleId: replacementVehicleId || undefined,
+        permitShiftId,
       });
 
       toast.success("Cấp phép thành công!");

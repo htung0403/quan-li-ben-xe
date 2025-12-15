@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "react-toastify";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,6 +6,8 @@ import { Label } from "@/components/ui/label";
 import { DateTimePicker } from "@/components/DatePicker";
 import { dispatchService } from "@/services/dispatch.service";
 import type { DispatchRecord } from "@/types";
+import { useUIStore } from "@/store/ui.store";
+import type { Shift } from "@/services/shift.service";
 
 interface ChoXeRaBenDialogProps {
   record: DispatchRecord;
@@ -23,6 +25,36 @@ export function ChoXeRaBenDialog({
     record.passengersDeparting?.toString() || "0"
   );
   const [isLoading, setIsLoading] = useState(false);
+  const { currentShift } = useUIStore();
+
+  // Helper function to get shift ID from currentShift string
+  const getShiftIdFromCurrentShift = (): string | undefined => {
+    if (!currentShift || currentShift === '<Trống>') {
+      return undefined;
+    }
+
+    const currentShifts = useUIStore.getState().shifts;
+    if (currentShifts.length === 0) {
+      return undefined;
+    }
+
+    const match = currentShift.match(/^(.+?)\s*\(/);
+    if (!match) {
+      return undefined;
+    }
+
+    const shiftName = match[1].trim();
+    const foundShift = currentShifts.find((shift: Shift) => shift.name === shiftName);
+    return foundShift?.id;
+  };
+
+  useEffect(() => {
+    // Load shifts if not already loaded
+    const { shifts: currentShifts, loadShifts } = useUIStore.getState();
+    if (currentShifts.length === 0) {
+      loadShifts();
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -34,10 +66,12 @@ export function ChoXeRaBenDialog({
 
     setIsLoading(true);
     try {
+      const exitShiftId = getShiftIdFromCurrentShift();
       await dispatchService.recordExit(
         record.id,
         exitTime.toISOString(),
-        parseInt(passengerCount)
+        parseInt(passengerCount),
+        exitShiftId
       );
       toast.success("Cho xe ra bến thành công!");
       if (onSuccess) onSuccess();

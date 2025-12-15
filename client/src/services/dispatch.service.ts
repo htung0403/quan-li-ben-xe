@@ -42,6 +42,7 @@ export const dispatchService = {
       routeId?: string
       scheduleId?: string
       replacementVehicleId?: string
+      permitShiftId?: string
     }
   ): Promise<DispatchRecord> => {
     const response = await api.post<DispatchRecord>(`/dispatch/${id}/permit`, data)
@@ -54,23 +55,26 @@ export const dispatchService = {
       paymentAmount: number
       paymentMethod?: 'cash' | 'bank_transfer' | 'card'
       invoiceNumber?: string
+      paymentShiftId?: string
     }
   ): Promise<DispatchRecord> => {
     const response = await api.post<DispatchRecord>(`/dispatch/${id}/payment`, data)
     return response.data
   },
 
-  issueDepartureOrder: async (id: string, passengersDeparting: number): Promise<DispatchRecord> => {
+  issueDepartureOrder: async (id: string, passengersDeparting: number, departureOrderShiftId?: string): Promise<DispatchRecord> => {
     const response = await api.post<DispatchRecord>(`/dispatch/${id}/departure-order`, {
       passengersDeparting,
+      departureOrderShiftId,
     })
     return response.data
   },
 
-  recordExit: async (id: string, exitTime?: string, passengersDeparting?: number): Promise<DispatchRecord> => {
+  recordExit: async (id: string, exitTime?: string, passengersDeparting?: number, exitShiftId?: string): Promise<DispatchRecord> => {
     const response = await api.post<DispatchRecord>(`/dispatch/${id}/exit`, {
       exitTime,
-      passengersDeparting
+      passengersDeparting,
+      exitShiftId,
     })
     return response.data
   },

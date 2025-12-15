@@ -377,6 +377,7 @@ export interface DispatchInput {
   routeId?: string
   entryTime: string
   notes?: string
+  entryShiftId?: string
 }
 
 // Violation types
