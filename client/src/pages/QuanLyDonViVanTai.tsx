@@ -17,6 +17,7 @@ import { operatorService } from "@/services/operator.service"
 import type { Operator } from "@/types"
 import { useUIStore } from "@/store/ui.store"
 import { OperatorDialog } from "@/components/operator/OperatorDialog"
+import { OperatorDetailDialog } from "@/components/operator/OperatorDetailDialog"
 
 export default function QuanLyDonViVanTai() {
   const [operators, setOperators] = useState<Operator[]>([])
@@ -25,6 +26,8 @@ export default function QuanLyDonViVanTai() {
   const [selectedOperator, setSelectedOperator] = useState<Operator | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [viewMode, setViewMode] = useState<"create" | "edit" | "view">("create")
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false)
+  const [selectedOperatorForDetail, setSelectedOperatorForDetail] = useState<Operator | null>(null)
   const setTitle = useUIStore((state) => state.setTitle)
 
   useEffect(() => {
@@ -88,6 +91,11 @@ export default function QuanLyDonViVanTai() {
     }
   }
 
+  const handleRowClick = (operator: Operator) => {
+    setSelectedOperatorForDetail(operator)
+    setDetailDialogOpen(true)
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-end">
@@ -141,7 +149,11 @@ export default function QuanLyDonViVanTai() {
               </TableRow>
             ) : (
               filteredOperators.map((operator) => (
-                <TableRow key={operator.id}>
+                <TableRow 
+                  key={operator.id}
+                  className="cursor-pointer hover:bg-gray-50"
+                  onClick={() => handleRowClick(operator)}
+                >
                   <TableCell className="font-medium text-center">{operator.code}</TableCell>
                   <TableCell className="text-center">
                     <div className="flex items-center justify-center">
@@ -161,7 +173,7 @@ export default function QuanLyDonViVanTai() {
                   <TableCell className="text-center">
                     <StatusBadge status={operator.isActive ? 'active' : 'inactive'} />
                   </TableCell>
-                  <TableCell className="text-center">
+                  <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
                     <div className="flex items-center justify-center gap-2">
                       <Button
                         size="sm"
@@ -203,6 +215,16 @@ export default function QuanLyDonViVanTai() {
         mode={viewMode}
         operator={selectedOperator}
         onSuccess={loadOperators}
+      />
+
+      {/* Operator Detail Dialog */}
+      <OperatorDetailDialog
+        open={detailDialogOpen}
+        onClose={() => {
+          setDetailDialogOpen(false)
+          setSelectedOperatorForDetail(null)
+        }}
+        operator={selectedOperatorForDetail}
       />
     </div>
   )

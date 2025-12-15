@@ -471,62 +471,70 @@ export default function DieuDo() {
       >
         <CardContent className="p-4">
           <div className="space-y-3">
-            {/* Header with bus icon and plate number */}
-            <div className="flex items-center gap-2">
-              {renderVehicleIcon()}
-              <span className="font-semibold text-gray-900">
-                {record.vehiclePlateNumber}
-              </span>
-            </div>
-
-            {/* Entry time */}
-            <div className="flex items-center gap-2 text-sm text-gray-600">
-              <Clock className="h-4 w-4" />
-              <span>{formatVietnamDateTime(record.entryTime)}</span>
-            </div>
-
-            {/* Route */}
-            {record.routeName && (
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <MapPin className="h-4 w-4" />
-                <span className="truncate">{record.routeName}</span>
-              </div>
-            )}
-
-            {/* Seat count / Passengers */}
-            {(record.seatCount || record.passengersArrived) && (
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <Users className="h-4 w-4" />
-                <span>
-                  {record.seatCount || record.passengersArrived || "-"}
+            {/* Header with bus icon, plate number and entry time */}
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                {renderVehicleIcon()}
+                <span className="font-semibold text-gray-900">
+                  {record.vehiclePlateNumber}
                 </span>
+              </div>
+              <div className="flex items-center gap-1.5 text-sm text-gray-600">
+                <Clock className="h-3.5 w-3.5" />
+                <span className="text-xs">{formatVietnamDateTime(record.entryTime)}</span>
+              </div>
+            </div>
+
+            {/* Seat count / Passengers with permit time if available */}
+            {(record.seatCount || record.passengersArrived) && (
+              <div className="flex items-center justify-between gap-2 text-sm text-gray-600">
+                <div className="flex items-center gap-2">
+                  <Users className="h-4 w-4" />
+                  <span>
+                    {record.seatCount || record.passengersArrived || "-"}
+                  </span>
+                </div>
+                {record.boardingPermitTime && (
+                  <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                    <FileCheck className="h-3.5 w-3.5" />
+                    <span>{formatVietnamDateTime(record.boardingPermitTime)}</span>
+                  </div>
+                )}
               </div>
             )}
 
             {/* Electronic order info (in-station only) */}
             {renderElectronicOrderInfo(record, status)}
 
-            {/* Departure time */}
-            {record.plannedDepartureTime && (
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <Calendar className="h-4 w-4" />
-                <span>
-                  {formatVietnamDateTime(record.plannedDepartureTime)}
-                </span>
+            {/* Driver name with departure time */}
+            {(record.driverName || record.plannedDepartureTime) && (
+              <div className="flex items-center justify-between gap-2 text-sm text-gray-600">
+                {record.driverName && (
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <User className="h-4 w-4 flex-shrink-0" />
+                    <span className="truncate">{record.driverName}</span>
+                  </div>
+                )}
+                {record.plannedDepartureTime && (
+                  <div className="flex items-center gap-1.5 text-xs text-gray-500 flex-shrink-0">
+                    <Calendar className="h-3.5 w-3.5" />
+                    <span>{formatVietnamDateTime(record.plannedDepartureTime)}</span>
+                  </div>
+                )}
               </div>
             )}
 
-            {/* Driver name */}
-            {record.driverName && (
-              <div className="flex items-center gap-2 text-sm text-gray-600">
-                <User className="h-4 w-4" />
-                <span className="truncate">{record.driverName}</span>
+            {/* Footer with route and action buttons */}
+            <div className="flex items-center justify-between gap-2 pt-2 border-t">
+              {record.routeName && (
+                <div className="flex items-center gap-1.5 text-sm text-gray-600 flex-1 min-w-0">
+                  <MapPin className="h-3.5 w-3.5 flex-shrink-0" />
+                  <span className="truncate">{record.routeName}</span>
+                </div>
+              )}
+              <div className="flex items-center gap-1 flex-shrink-0">
+                {getActionButtons(record, status)}
               </div>
-            )}
-
-            {/* Action buttons */}
-            <div className="flex items-center justify-end gap-1 pt-2 border-t">
-              {getActionButtons(record, status)}
             </div>
           </div>
         </CardContent>

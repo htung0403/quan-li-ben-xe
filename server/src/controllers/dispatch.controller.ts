@@ -518,8 +518,9 @@ export const processPayment = async (req: AuthRequest, res: Response) => {
     const { paymentAmount, paymentMethod, invoiceNumber } = req.body
     const userId = req.user?.id
 
-    if (!paymentAmount || paymentAmount <= 0) {
-      return res.status(400).json({ error: 'Valid payment amount is required' })
+    // Allow payment amount >= 0 (including 0 for cases with no services)
+    if (paymentAmount === undefined || paymentAmount === null || paymentAmount < 0) {
+      return res.status(400).json({ error: 'Valid payment amount is required (must be >= 0)' })
     }
 
     const { data, error } = await supabase

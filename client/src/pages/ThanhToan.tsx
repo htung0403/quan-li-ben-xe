@@ -21,6 +21,14 @@ import { Select } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Card, CardContent } from "@/components/ui/card"
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog"
+import {
   Table,
   TableBody,
   TableCell,
@@ -62,6 +70,7 @@ export default function ThanhToan() {
   })
   const [showServiceDropdown, setShowServiceDropdown] = useState(false)
   const serviceDropdownRef = useRef<HTMLDivElement>(null)
+  const [showZeroAmountWarning, setShowZeroAmountWarning] = useState(false)
 
   // List view state
   const [allData, setAllData] = useState<DispatchRecord[]>([])
@@ -280,7 +289,7 @@ export default function ThanhToan() {
     return { subtotal, discount, tax, total }
   }
 
-  const handlePayment = async () => {
+  const processPayment = async () => {
     if (!record) return
 
     const { total } = calculateTotals()
@@ -300,6 +309,26 @@ export default function ThanhToan() {
     } finally {
       setIsProcessing(false)
     }
+  }
+
+  const handlePayment = async () => {
+    if (!record) return
+
+    const { total } = calculateTotals()
+    
+    // Kiểm tra nếu tổng tiền = 0, hiển thị modal cảnh báo
+    if (total === 0) {
+      setShowZeroAmountWarning(true)
+      return
+    }
+    
+    // Nếu có tiền, thanh toán trực tiếp
+    await processPayment()
+  }
+
+  const handleConfirmZeroAmountPayment = async () => {
+    setShowZeroAmountWarning(false)
+    await processPayment()
   }
 
   const handleCancel = () => {
@@ -1013,6 +1042,39 @@ export default function ThanhToan() {
           </Card>
         </div>
       </div>
+
+      {/* Zero Amount Warning Dialog */}
+      <Dialog open={showZeroAmountWarning} onOpenChange={setShowZeroAmountWarning}>
+        <DialogContent className="max-w-md">
+          <DialogClose onClose={() => setShowZeroAmountWarning(false)} />
+          <DialogHeader>
+            <DialogTitle>Cảnh báo thanh toán</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-gray-700">
+              Tổng tiền thanh toán là <span className="font-bold text-red-600">0 đồng</span>.
+            </p>
+            <p className="text-gray-600 mt-2">
+              Bạn có chắc chắn muốn tiếp tục thanh toán?
+            </p>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowZeroAmountWarning(false)}
+            >
+              Hủy
+            </Button>
+            <Button
+              className="bg-green-600 hover:bg-green-700"
+              onClick={handleConfirmZeroAmountPayment}
+              disabled={isProcessing}
+            >
+              {isProcessing ? "Đang xử lý..." : "Xác nhận thanh toán"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
