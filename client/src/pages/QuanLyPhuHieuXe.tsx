@@ -43,10 +43,10 @@ const formatDate = (dateString: string | undefined | null): string => {
 }
 
 // Helper function to get status badge variant
-const getStatusVariant = (status: string): "active" | "inactive" | "warning" => {
+const getStatusVariant = (status: string): "active" | "inactive" | "maintenance" => {
   if (status === "Hiệu lực") return "active"
   if (status === "Hết hiệu lực") return "inactive"
-  return "warning"
+  return "maintenance" // For unknown statuses
 }
 
 export default function QuanLyPhuHieuXe() {

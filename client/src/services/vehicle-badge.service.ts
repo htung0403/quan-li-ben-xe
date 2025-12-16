@@ -1,7 +1,7 @@
 // Service for fetching vehicle badge data from Firebase Realtime Database
 const FIREBASE_API_URL = 
-  import.meta.env.VITE_PHUHIEU_FIREBASE
-  
+  import.meta.env.VITE_PHUHIEU_FIREBASE || 
+  'https://projectapi-3ba88-default-rtdb.asia-southeast1.firebasedatabase.app/datasheet/PHUHIEUXE.json'
 
 export interface VehicleBadge {
   id: string
