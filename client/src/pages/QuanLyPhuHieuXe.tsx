@@ -44,9 +44,21 @@ const formatDate = (dateString: string | undefined | null): string => {
 
 // Helper function to get status badge variant
 const getStatusVariant = (status: string): "active" | "inactive" | "maintenance" => {
-  if (status === "Hiệu lực") return "active"
-  if (status === "Hết hiệu lực") return "inactive"
-  return "maintenance" // For unknown statuses
+  if (status === "active") return "active"
+  if (status === "expired" || status === "revoked") return "inactive"
+  return "maintenance" // For pending, replaced, or unknown statuses
+}
+
+// Helper function to translate status to Vietnamese
+const translateStatus = (status: string): string => {
+  const statusMap: Record<string, string> = {
+    active: "Hiệu lực",
+    expired: "Hết hiệu lực",
+    revoked: "Thu hồi",
+    replaced: "Đã thay thế",
+    pending: "Chờ xử lý"
+  }
+  return statusMap[status] || status
 }
 
 export default function QuanLyPhuHieuXe() {
@@ -58,6 +70,8 @@ export default function QuanLyPhuHieuXe() {
   const [isLoading, setIsLoading] = useState(false)
   const [selectedBadge, setSelectedBadge] = useState<VehicleBadge | null>(null)
   const [viewDialogOpen, setViewDialogOpen] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const itemsPerPage = 10
   const setTitle = useUIStore((state) => state.setTitle)
 
   useEffect(() => {
@@ -112,6 +126,17 @@ export default function QuanLyPhuHieuXe() {
 
     return true
   })
+
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredBadges.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const paginatedBadges = filteredBadges.slice(startIndex, endIndex)
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchQuery, filterStatus, filterBadgeType, filterBadgeColor])
 
   const handleView = (badge: VehicleBadge) => {
     setSelectedBadge(badge)
@@ -275,7 +300,7 @@ export default function QuanLyPhuHieuXe() {
                 </TableCell>
               </TableRow>
             ) : (
-              filteredBadges.map((badge) => (
+              paginatedBadges.map((badge) => (
                 <TableRow key={badge.id}>
                   <TableCell className="font-medium text-center">
                     {badge.badge_number}
@@ -296,7 +321,10 @@ export default function QuanLyPhuHieuXe() {
                     {formatDate(badge.expiry_date)}
                   </TableCell>
                   <TableCell className="text-center">
-                    <StatusBadge status={getStatusVariant(badge.status)} />
+                    <StatusBadge 
+                      status={getStatusVariant(badge.status)}
+                      label={translateStatus(badge.status)}
+                    />
                   </TableCell>
                   <TableCell className="text-center">
                     {badge.file_code || "N/A"}
@@ -317,6 +345,63 @@ export default function QuanLyPhuHieuXe() {
           </TableBody>
         </Table>
       </Card>
+
+      {/* Pagination */}
+      {filteredBadges.length > 0 && (
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-gray-600">
+                Hiển thị {startIndex + 1} - {Math.min(endIndex, filteredBadges.length)} của {filteredBadges.length} phù hiệu
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                >
+                  Trang trước
+                </Button>
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: totalPages }, (_, i) => i + 1)
+                    .filter((page) => {
+                      // Show first page, last page, current page, and pages around current
+                      return (
+                        page === 1 ||
+                        page === totalPages ||
+                        (page >= currentPage - 1 && page <= currentPage + 1)
+                      )
+                    })
+                    .map((page, index, array) => (
+                      <div key={page} className="flex items-center">
+                        {index > 0 && array[index - 1] !== page - 1 && (
+                          <span className="px-2 text-gray-400">...</span>
+                        )}
+                        <Button
+                          variant={currentPage === page ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setCurrentPage(page)}
+                          className="min-w-[40px]"
+                        >
+                          {page}
+                        </Button>
+                      </div>
+                    ))}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                >
+                  Trang sau
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* View Detail Dialog */}
       <Dialog open={viewDialogOpen} onOpenChange={setViewDialogOpen}>
@@ -354,7 +439,10 @@ export default function QuanLyPhuHieuXe() {
                 </div>
                 <div className="space-y-2">
                   <Label className="text-sm font-semibold">Trạng thái</Label>
-                  <StatusBadge status={getStatusVariant(selectedBadge.status)} />
+                  <StatusBadge 
+                    status={getStatusVariant(selectedBadge.status)}
+                    label={translateStatus(selectedBadge.status)}
+                  />
                 </div>
                 <div className="space-y-2">
                   <Label className="text-sm font-semibold">Loại cấp</Label>

@@ -1,7 +1,4 @@
-// Service for fetching vehicle badge data from Firebase Realtime Database
-const FIREBASE_API_URL = 
-  import.meta.env.VITE_PHUHIEU_FIREBASE || 
-  'https://projectapi-3ba88-default-rtdb.asia-southeast1.firebasedatabase.app/datasheet/PHUHIEUXE.json'
+import api from "@/lib/api"
 
 export interface VehicleBadge {
   id: string
@@ -34,34 +31,11 @@ export interface VehicleBadge {
   warn_duplicate_plate: boolean
 }
 
-export interface VehicleBadgeResponse {
-  [key: string]: VehicleBadge
-}
-
 export const vehicleBadgeService = {
   getAll: async (): Promise<VehicleBadge[]> => {
     try {
-      if (!FIREBASE_API_URL) {
-        throw new Error('Firebase API URL is not configured. Please set VITE_PHUHIEU_FIREBASE in .env file')
-      }
-      
-      const response = await fetch(FIREBASE_API_URL)
-      if (!response.ok) {
-        throw new Error(`Failed to fetch vehicle badges: ${response.status} ${response.statusText}`)
-      }
-      
-      const contentType = response.headers.get('content-type')
-      if (!contentType || !contentType.includes('application/json')) {
-        throw new Error(`Expected JSON response but got ${contentType}. Check if the URL is correct.`)
-      }
-      
-      const data: VehicleBadgeResponse = await response.json()
-      
-      // Convert object to array and ensure id is set
-      return Object.entries(data).map(([key, value]) => ({
-        ...value,
-        id: value.id || key,
-      }))
+      const response = await api.get('/vehicle-badges')
+      return response.data
     } catch (error) {
       console.error('Error fetching vehicle badges:', error)
       throw error
@@ -70,10 +44,25 @@ export const vehicleBadgeService = {
 
   getById: async (id: string): Promise<VehicleBadge | null> => {
     try {
-      const badges = await vehicleBadgeService.getAll()
-      return badges.find((badge) => badge.id === id) || null
+      const response = await api.get(`/vehicle-badges/${id}`)
+      return response.data
     } catch (error) {
       console.error('Error fetching vehicle badge by id:', error)
+      throw error
+    }
+  },
+
+  getStats: async (): Promise<{
+    total: number
+    active: number
+    expired: number
+    expiringSoon: number
+  }> => {
+    try {
+      const response = await api.get('/vehicle-badges/stats')
+      return response.data
+    } catch (error) {
+      console.error('Error fetching vehicle badge stats:', error)
       throw error
     }
   },

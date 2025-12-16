@@ -22,6 +22,7 @@ import serviceFormulaRoutes from './routes/service-formula.routes.js'
 import reportRoutes from './routes/report.routes.js'
 import dashboardRoutes from './routes/dashboard.routes.js'
 import uploadRoutes from './routes/upload.routes.js'
+import vehicleBadgeRoutes from './routes/vehicle-badge.routes.js'
 
 dotenv.config()
 
@@ -95,6 +96,7 @@ app.use('/api/service-formulas', serviceFormulaRoutes)
 app.use('/api/reports', reportRoutes)
 app.use('/api/dashboard', dashboardRoutes)
 app.use('/api/upload', uploadRoutes)
+app.use('/api/vehicle-badges', vehicleBadgeRoutes)
 
 // Error handling
 app.use(errorHandler)
