@@ -66,17 +66,17 @@ export const getVehicleBadgeById = async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'Vehicle badge not found' })
     }
 
-    res.json(badge)
+    return res.json(badge)
   } catch (error) {
     console.error('Error fetching vehicle badge:', error)
-    res.status(500).json({ 
+    return res.status(500).json({ 
       error: 'Failed to fetch vehicle badge',
       details: error instanceof Error ? error.message : 'Unknown error'
     })
   }
 }
 
-export const getVehicleBadgeStats = async (req: Request, res: Response) => {
+export const getVehicleBadgeStats = async (_req: Request, res: Response) => {
   try {
     // Get total badges
     const { count: totalCount } = await supabase
