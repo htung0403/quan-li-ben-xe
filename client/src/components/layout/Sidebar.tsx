@@ -26,6 +26,7 @@ import {
   CarFront,
   Package,
   Calculator,
+  Award,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/store/auth.store";
@@ -90,6 +91,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     { name: "Bến đến", href: "/quan-ly-ben-den", icon: MapPin, flip: false },
     { name: "Quản lý dịch vụ", href: "/quan-ly-dich-vu", icon: Package, flip: false },
     { name: "Biểu thức", href: "/quan-ly-bieu-thuc", icon: Calculator, flip: false },
+    { name: "Phù hiệu xe", href: "/quan-ly-phu-hieu-xe", icon: Award, flip: false },
     { name: "Danh sách ca trực", href: "/danh-sach-ca-truc", icon: CalendarClock, flip: false },
   ];
 

@@ -20,6 +20,7 @@ import QuanLyTuyen from "@/pages/QuanLyTuyen"
 import QuanLyBenDen from "@/pages/QuanLyBenDen"
 import QuanLyDichVu from "@/pages/QuanLyDichVu"
 import QuanLyBieuThuc from "@/pages/QuanLyBieuThuc"
+import QuanLyPhuHieuXe from "@/pages/QuanLyPhuHieuXe"
 import DanhSachCaTruc from "@/pages/DanhSachCaTruc"
 import BaoCao from "@/pages/BaoCao"
 import Profile from "@/pages/Profile"
@@ -262,6 +263,16 @@ function App() {
             <ProtectedRoute>
               <MainLayout>
                 <QuanLyBieuThuc />
+              </MainLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/quan-ly-phu-hieu-xe"
+          element={
+            <ProtectedRoute>
+              <MainLayout>
+                <QuanLyPhuHieuXe />
               </MainLayout>
             </ProtectedRoute>
           }

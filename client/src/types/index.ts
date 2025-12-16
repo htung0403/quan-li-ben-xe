@@ -562,3 +562,35 @@ export interface InvoiceReport {
   issueDate: string
   status: string
 }
+
+// Vehicle Badge types (Phù hiệu xe)
+export interface VehicleBadge {
+  id: string
+  badge_color: string
+  badge_number: string
+  badge_type: string
+  bus_route_ref: string
+  business_license_ref: string
+  created_at: string
+  created_by: string
+  email_notification_sent: boolean
+  expiry_date: string
+  file_code: string
+  issue_date: string
+  issue_type: string
+  license_plate_sheet: string
+  notes: string
+  notification_ref: string
+  previous_badge_number: string
+  renewal_due_date: string
+  renewal_reason: string
+  renewal_reminder_shown: boolean
+  replacement_vehicle_id: string
+  revocation_date: string
+  revocation_decision: string
+  revocation_reason: string
+  route_id: string
+  status: string
+  vehicle_id: string
+  warn_duplicate_plate: boolean
+}
